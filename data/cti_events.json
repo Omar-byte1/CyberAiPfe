@@ -1,0 +1,1147 @@
+[
+    {
+        "info": "Iran-linked ransomware group targets U.S. healthcare provider",
+        "description": "The Pay2Key group, linked to Iran, targeted an unnamed U.S. healthcare provider in the lead-up to the Iran war. The group gained access to a compromised administrative account for several days and encrypted it without stealing data. This marks a departure from the group's previous extortion tactics, suggesting they may now focus on destruction rather than pure extortion. The threat group has also shifted its attention toward the U.S., historically targeting Israeli systems.",
+        "category": "cti",
+        "threat_level": 3,
+        "analysis": "initial",
+        "tags": [
+            {
+                "name": "ransomware",
+                "color": "red"
+            },
+            {
+                "name": "destruction",
+                "color": "orange"
+            }
+        ],
+        "attributes": [
+            {
+                "type": "domain",
+                "category": "Network activity",
+                "value": "Halcyon",
+                "role": "C2 Server",
+                "comment": "The company providing forensic investigation services.",
+                "geo_localisation": [],
+                "uuid": "a9e2fa04-fb6f-4d7e-a686-5383e1e8458f",
+                "timestamp": "1774971481",
+                "data": ""
+            },
+            {
+                "type": "ip",
+                "category": "Payload delivery",
+                "value": "1.2.3.4",
+                "role": "Malware",
+                "comment": "IP address used for the ransomware infection.",
+                "geo_localisation": [
+                    "USA"
+                ],
+                "uuid": "3da65f4a-7d64-4b25-ab50-f23bf286f329",
+                "timestamp": "1774971481",
+                "data": ""
+            },
+            {
+                "type": "domain",
+                "category": "Attribution",
+                "value": "Iran-linked actors",
+                "role": "Threat Actor",
+                "comment": "The group responsible for the attack.",
+                "geo_localisation": [],
+                "uuid": "7849a13d-542c-403e-81d9-101a65e3492e",
+                "timestamp": "1774971481",
+                "data": ""
+            }
+        ],
+        "id": "e2c2c4a5-45ea-4248-bb77-b80a0d397260",
+        "date_occured": "2026-03-31",
+        "collectionDate": "2026-03-31T15:38:01.650238+00:00",
+        "created_at": "1774971481",
+        "updated_at": "1774971481",
+        "platform": "te",
+        "is_shared": true,
+        "is_verified": false,
+        "website": "threatseye",
+        "author": "threatseye",
+        "shared_with": {
+            "_id": "none"
+        },
+        "organisation": {
+            "name": "threatseye",
+            "uuid": "a9bdb34b-3fb7-44f0-96ab-127cf9c070c8"
+        },
+        "TLP": [
+            {
+                "name": "white",
+                "color": "#ffffff"
+            }
+        ]
+    },
+    {
+        "info": "Cybercriminals Exploit Human Behavior for Access",
+        "description": "Despite enhanced security infrastructure, cybercriminals continue to exploit human behavior as a gateway into organizations. This includes stealing valid credentials and logging in, which is often easier than breaking through perimeter defenses. AI-enabled social engineering allows attackers to scale tactics quickly and convincingly. Identity has become the enterprise's front door, but traditional responses like awareness training are insufficient. Reducing human-enabled risk requires systems and governance designed to anticipate error and limit its impact.",
+        "category": "cti",
+        "threat_level": 3,
+        "analysis": "initial",
+        "tags": [
+            {
+                "name": "human-targeting",
+                "color": "purple"
+            }
+        ],
+        "attributes": [
+            {
+                "type": "text",
+                "category": "Network activity",
+                "value": "Phishing, smishing, vishing, email compromise, impersonation",
+                "role": "C2 Server",
+                "comment": "Cybercriminals use these tactics to deceive users into providing sensitive information.",
+                "geo_localisation": [],
+                "uuid": "7f474f8d-767f-4819-8032-0574c17e1fd2",
+                "timestamp": "1774970758",
+                "data": ""
+            },
+            {
+                "type": "text",
+                "category": "Payload delivery",
+                "value": "Credentials, personal devices, cloud applications",
+                "role": "Malware",
+                "comment": "Attackers exploit these vulnerabilities to gain unauthorized access.",
+                "geo_localisation": [],
+                "uuid": "4802efae-fd14-49f2-b026-49f0d7fb42de",
+                "timestamp": "1774970758",
+                "data": ""
+            }
+        ],
+        "id": "cf477bd4-1c19-49ab-93c9-68f8fc61003c",
+        "date_occured": "2026-03-31",
+        "collectionDate": "2026-03-31T15:25:58.283440+00:00",
+        "created_at": "1774970758",
+        "updated_at": "1774970758",
+        "platform": "te",
+        "is_shared": true,
+        "is_verified": false,
+        "website": "threatseye",
+        "author": "threatseye",
+        "shared_with": {
+            "_id": "none"
+        },
+        "organisation": {
+            "name": "threatseye",
+            "uuid": "b36cf9d3-8df4-48a8-b55a-609b13d6722b"
+        },
+        "TLP": [
+            {
+                "name": "white",
+                "color": "#ffffff"
+            }
+        ]
+    },
+    {
+        "info": "Apple Sends Lock Screen Notifications for Outdated iOS Versions",
+        "description": "Apple is now sending lock screen notifications to iPhones and iPads running older versions of iOS and iPadOS to alert users of web-based attacks and urge them to install the update. The development was first reported by MacRumors. Apple is aware of attacks targeting out-of-date iOS software, including the version on your iPhone. Install this critical update to protect your iPhone.",
+        "category": "cti",
+        "threat_level": 2,
+        "analysis": "initial",
+        "tags": [
+            {
+                "name": "malware",
+                "color": "red"
+            }
+        ],
+        "attributes": [
+            {
+                "type": "text",
+                "category": "Network activity",
+                "value": "Lock Screen notifications sent to iPhones and iPads running older versions of iOS and iPadOS",
+                "role": "Notification",
+                "comment": "Alerts users about web-based attacks targeting outdated software",
+                "uuid": "56607fb9-6ba8-4093-b1cf-f91b25717c4f",
+                "timestamp": "1774965078",
+                "data": "",
+                "geo_localisation": []
+            },
+            {
+                "type": "text",
+                "category": "Attribution",
+                "value": "Multiple threat actors leveraging exploit kits like Coruna and DarkSword to deliver malicious payloads",
+                "role": "Attacker",
+                "comment": "Identified threat actors using these kits for web-based attacks",
+                "uuid": "536a527e-ec13-4df2-b024-10a4c3f0c4d0",
+                "timestamp": "1774965078",
+                "data": "",
+                "geo_localisation": []
+            },
+            {
+                "type": "text",
+                "category": "Attribution",
+                "value": "Russian cybersecurity vendor Kaspersky reporting on the evolution of Coruna from Operation Triangulation",
+                "role": "Attacker",
+                "comment": "Kaspersky's analysis of Coruna and its relationship to Operation Triangulation",
+                "uuid": "bcb55f2d-a103-478b-9f78-bba517798116",
+                "timestamp": "1774965078",
+                "data": "",
+                "geo_localisation": []
+            },
+            {
+                "type": "text",
+                "category": "Attribution",
+                "value": "Recent research suggesting an active market for second-hand zero-day exploits",
+                "role": "Attacker",
+                "comment": "Potential market for exploiting vulnerabilities in older versions of iOS",
+                "uuid": "76da8e36-c067-4312-9bd5-ed2441e5d6a5",
+                "timestamp": "1774965078",
+                "data": "",
+                "geo_localisation": []
+            }
+        ],
+        "id": "0f4fb9e4-911e-4786-aa6a-9e2b77d42515",
+        "date_occured": "2026-03-31",
+        "collectionDate": "2026-03-31T13:51:18.861901+00:00",
+        "created_at": "1774965078",
+        "updated_at": "1774965078",
+        "platform": "te",
+        "is_shared": true,
+        "is_verified": false,
+        "website": "threatseye",
+        "author": "threatseye",
+        "shared_with": {
+            "_id": "none"
+        },
+        "organisation": {
+            "name": "threatseye",
+            "uuid": "ecf4fe88-f71f-4aec-ac76-e6f00f60cf44"
+        },
+        "TLP": [
+            {
+                "name": "white",
+                "color": "#ffffff"
+            }
+        ]
+    },
+    {
+        "info": "2.64 MB file on MEGA",
+        "description": "A large file of approximately 2.64 MB has been uploaded to a popular cloud storage service, MEGA. This could potentially be used for malicious purposes such as ransomware or data exfiltration.",
+        "category": "cti",
+        "threat_level": 3,
+        "analysis": "initial",
+        "tags": [
+            {
+                "name": "ransomware",
+                "color": "red"
+            }
+        ],
+        "attributes": [
+            {
+                "type": "file",
+                "category": "Payload delivery",
+                "value": "2.64 MB file on MEGA",
+                "role": "Target",
+                "comment": "The large file could be used as a payload for ransomware or data exfiltration.",
+                "geo_localisation": [],
+                "uuid": "882f516a-61c9-4582-8212-84bdf114937a",
+                "timestamp": "1774958273",
+                "data": ""
+            }
+        ],
+        "id": "12d6f93e-ccab-428d-b5c5-9a39f7b8303f",
+        "date_occured": "2026-03-31",
+        "collectionDate": "2026-03-31T11:57:53.548812+00:00",
+        "created_at": "1774958273",
+        "updated_at": "1774958273",
+        "platform": "te",
+        "is_shared": true,
+        "is_verified": false,
+        "website": "threatseye",
+        "author": "threatseye",
+        "shared_with": {
+            "_id": "none"
+        },
+        "organisation": {
+            "name": "threatseye",
+            "uuid": "8c262b92-dbab-4aa1-98e4-0c929a0fbda5"
+        },
+        "TLP": [
+            {
+                "name": "white",
+                "color": "#ffffff"
+            }
+        ]
+    },
+    {
+        "info": "Targeted iOS Campaign Using DarkSword Exploit Kit",
+        "description": "Proofpoint has disclosed details of a targeted email campaign in which threat actors with ties to Russia are leveraging the recently disclosed DarkSword exploit kit to target iOS devices. The activity has been attributed with high confidence to the Russian state-sponsored threat group known as TA446, which is also tracked by the broader cybersecurity community under the monikers Callisto, COLDRIVER, and Star Blizzard (formerly SEABORGIUM). It's assessed to be affiliated with Russia's Federal Security Service (FSB). The hacking group is known for spear-phishing campaigns aimed at harvesting credentials from targets of interest. However, attacks mounted by the threat actor over the past year have targeted victims' WhatsApp accounts, as well as leveraged various custom malware families to steal sensitive data. The latest activity involves using fake \"discussion invitation\" emails spoofing the Atlantic Council to facilitate the delivery of GHOSTBLADE, a dataminer malware, via the DarkSword exploit kit.",
+        "category": "cti",
+        "threat_level": 3,
+        "analysis": "initial",
+        "tags": [
+            {
+                "name": "ransomware",
+                "color": "red"
+            }
+        ],
+        "attributes": [
+            {
+                "type": "domain",
+                "category": "Network activity",
+                "value": "escofiringbijou[.]com",
+                "role": "C2 Server",
+                "comment": "Second-stage domain attributed to the threat actor",
+                "geo_localisation": [],
+                "uuid": "3cbfc468-a2e2-4124-b388-17724fce4f90",
+                "timestamp": "1774957924",
+                "data": ""
+            },
+            {
+                "type": "ip",
+                "category": "Payload delivery",
+                "value": "1.2.3.4",
+                "role": "Malware",
+                "comment": "IP address of the compromised sender",
+                "geo_localisation": [
+                    "US"
+                ],
+                "uuid": "ac127912-c802-4eb4-9e2d-a5f647993ad6",
+                "timestamp": "1774957924",
+                "data": ""
+            },
+            {
+                "type": "domain",
+                "category": "Network activity",
+                "value": "darksword[.]com",
+                "role": "C2 Server",
+                "comment": "Domain serving the DarkSword exploit kit",
+                "geo_localisation": [],
+                "uuid": "91a5e744-0f47-43ac-9dde-933b6df48d52",
+                "timestamp": "1774957924",
+                "data": ""
+            }
+        ],
+        "id": "c7a9c7a4-82be-469c-bdd7-4681584603ed",
+        "date_occured": "2026-03-31",
+        "collectionDate": "2026-03-31T11:52:04.275494+00:00",
+        "created_at": "1774957924",
+        "updated_at": "1774957924",
+        "platform": "te",
+        "is_shared": true,
+        "is_verified": false,
+        "website": "threatseye",
+        "author": "threatseye",
+        "shared_with": {
+            "_id": "none"
+        },
+        "organisation": {
+            "name": "threatseye",
+            "uuid": "71305dde-5716-4a96-9996-9feb2c15addb"
+        },
+        "TLP": [
+            {
+                "name": "white",
+                "color": "#ffffff"
+            }
+        ]
+    },
+    {
+        "info": "AI Security Risks: Companies Rushing to Buy Services Risk Deteriorating Defenses",
+        "description": "Experts warn that businesses rushing to purchase AI security services are risking letting their existing, still-vital defensive measures deteriorate. The technology is not a cure-all and introduces new risks.",
+        "category": "cti",
+        "threat_level": 3,
+        "analysis": "initial",
+        "tags": [
+            {
+                "name": "ai-security",
+                "color": "purple"
+            }
+        ],
+        "attributes": [
+            {
+                "type": "text",
+                "category": "Network activity",
+                "value": "AI tools are using speed and scale to find exposed security keys for software development platforms.",
+                "role": "C2 Server",
+                "comment": "AI is helping hackers do the things that are already successful.",
+                "uuid": "4b45d6b6-196c-4f80-b29b-ac22c9014d31",
+                "timestamp": "1774955707",
+                "data": "",
+                "geo_localisation": []
+            },
+            {
+                "type": "text",
+                "category": "Network activity",
+                "value": "False positives have always been a problem in trying to apply machine learning and AI to defense.",
+                "role": "C2 Server",
+                "comment": "AI is introducing new risks, especially in the cases where it\u2019s fairly immature technology.",
+                "uuid": "89607cfa-9237-4111-83d4-6cc1a49c7da0",
+                "timestamp": "1774955707",
+                "data": "",
+                "geo_localisation": []
+            },
+            {
+                "type": "text",
+                "category": "Network activity",
+                "value": "In the future, every team in capture-the-flag cybersecurity exercises would have one person dedicated to spinning up AI agents just to launch prompt-injection attacks on competing teams\u2019 agents.",
+                "role": "C2 Server",
+                "comment": "AI is helping hackers do the things that are already successful.",
+                "uuid": "863086d0-0b4d-4a1c-aa24-2c99405b5d7d",
+                "timestamp": "1774955707",
+                "data": "",
+                "geo_localisation": []
+            }
+        ],
+        "id": "5266ffa3-be40-42d9-ba68-3aa3e2528b7f",
+        "date_occured": "2026-03-31",
+        "collectionDate": "2026-03-31T11:15:07.918490+00:00",
+        "created_at": "1774955707",
+        "updated_at": "1774955707",
+        "platform": "te",
+        "is_shared": true,
+        "is_verified": false,
+        "website": "threatseye",
+        "author": "threatseye",
+        "shared_with": {
+            "_id": "none"
+        },
+        "organisation": {
+            "name": "threatseye",
+            "uuid": "0f114b1b-fb37-440a-8ae3-e4d7154d6afd"
+        },
+        "TLP": [
+            {
+                "name": "white",
+                "color": "#ffffff"
+            }
+        ]
+    },
+    {
+        "info": "Targeted iOS Campaign Using DarkSword Exploit Kit",
+        "description": "Proofpoint has disclosed details of a targeted email campaign in which threat actors with ties to Russia are leveraging the recently disclosed DarkSword exploit kit to target iOS devices. The activity has been attributed with high confidence to the Russian state-sponsored threat group known as TA446, which is also tracked by the broader cybersecurity community under the monikers Callisto, COLDRIVER, and Star Blizzard (formerly SEABORGIUM). It's assessed to be affiliated with Russia's Federal Security Service (FSB). The hacking group is known for spear-phishing campaigns aimed at harvesting credentials from targets of interest. However, attacks mounted by the threat actor over the past year have targeted victims' WhatsApp accounts, as well as leveraged various custom malware families to steal sensitive data. The latest activity involves using fake 'discussion invitation' emails spoofing the Atlantic Council to facilitate the delivery of GHOSTBLADE, a dataminer malware, via the DarkSword exploit kit.",
+        "category": "cti",
+        "threat_level": 3,
+        "analysis": "initial",
+        "tags": [
+            {
+                "name": "ransomware",
+                "color": "red"
+            },
+            {
+                "name": "supply-chain-attack",
+                "color": "red"
+            }
+        ],
+        "attributes": [
+            {
+                "type": "domain",
+                "category": "Network activity",
+                "value": "escofiringbijou[.]com",
+                "role": "C2 Server",
+                "comment": "Second-stage domain attributed to the threat actor",
+                "uuid": "dec1db39-58cd-43ce-82c3-fa381384ae14",
+                "timestamp": "1774955456",
+                "data": "",
+                "geo_localisation": []
+            },
+            {
+                "type": "ip",
+                "category": "Payload delivery",
+                "value": "1.2.3.4",
+                "role": "Malware",
+                "comment": "IP address of the compromised sender",
+                "uuid": "62a4aa97-aa4a-4bc2-932d-1f9e09aca26e",
+                "timestamp": "1774955456",
+                "data": "",
+                "geo_localisation": []
+            },
+            {
+                "type": "domain",
+                "category": "Network activity",
+                "value": "darksword[.]com",
+                "role": "C2 Server",
+                "comment": "Domain serving the DarkSword exploit kit",
+                "uuid": "e1b37832-5fe0-4c5a-a4e3-91c835ceb8ca",
+                "timestamp": "1774955456",
+                "data": "",
+                "geo_localisation": []
+            }
+        ],
+        "id": "63d0db32-4988-49c9-b53c-73c44cbb113e",
+        "date_occured": "2026-03-31",
+        "collectionDate": "2026-03-31T11:10:56.277603+00:00",
+        "created_at": "1774955456",
+        "updated_at": "1774955456",
+        "platform": "te",
+        "is_shared": true,
+        "is_verified": false,
+        "website": "threatseye",
+        "author": "threatseye",
+        "shared_with": {
+            "_id": "none"
+        },
+        "organisation": {
+            "name": "threatseye",
+            "uuid": "2eb8d8e0-f783-4936-bf8e-9d60c795345e"
+        },
+        "TLP": [
+            {
+                "name": "white",
+                "color": "#ffffff"
+            }
+        ]
+    },
+    {
+        "info": "Critical Security Flaws Exploited",
+        "description": "A critical security flaw in Citrix NetScaler ADC and NetScaler Gateway has been exploited, leading to memory overread vulnerabilities. AI is introducing new security concerns while technical debt and tool sprawl are dragging teams down.",
+        "category": "cti",
+        "threat_level": 1,
+        "analysis": "initial",
+        "tags": [
+            {
+                "name": "supply-chain-attack",
+                "color": "red"
+            }
+        ],
+        "attributes": [
+            {
+                "type": "vulnerability",
+                "category": "vulnerability",
+                "value": "CVE-2026-3055 (Citrix NetScaler ADC and NetScaler Gateway)",
+                "role": "Malware",
+                "comment": "Critical security flaw exploited in Citrix NetScaler",
+                "geo_localisation": [],
+                "uuid": "6d89d1b9-dcd1-48a8-8118-84d15381a5df",
+                "timestamp": "1774955376",
+                "data": ""
+            },
+            {
+                "type": "vulnerability",
+                "category": "vulnerability",
+                "value": "CVE-2025-62843, CVE-2025-62844, CVE-2025-62845, CVE-2025-62846 (QNAP)",
+                "role": "Malware",
+                "comment": "Multiple vulnerabilities in QNAP devices",
+                "geo_localisation": [],
+                "uuid": "b7541645-f3e8-414b-a3aa-cfcf2a97e871",
+                "timestamp": "1774955376",
+                "data": ""
+            },
+            {
+                "type": "vulnerability",
+                "category": "vulnerability",
+                "value": "CVE-2026-22898 (QNAP QVR Pro)",
+                "role": "Malware",
+                "comment": "Vulnerability in QNAP QVR Pro",
+                "geo_localisation": [],
+                "uuid": "e4d4d87b-4a9d-47b0-9859-deb0db52e058",
+                "timestamp": "1774955376",
+                "data": ""
+            },
+            {
+                "type": "vulnerability",
+                "category": "vulnerability",
+                "value": "CVE-2026-4673, CVE-2026-4677, CVE-2026-4674 (Google Chrome)",
+                "role": "Malware",
+                "comment": "Vulnerabilities in Google Chrome",
+                "geo_localisation": [],
+                "uuid": "8c8299c1-aea7-42bf-976b-9b8ab4b4e510",
+                "timestamp": "1774955376",
+                "data": ""
+            },
+            {
+                "type": "vulnerability",
+                "category": "vulnerability",
+                "value": "CVE-2026-4404 (GoHarbor Harbor)",
+                "role": "Malware",
+                "comment": "Vulnerability in GoHarbor Harbor",
+                "geo_localisation": [],
+                "uuid": "3515d90e-fd3e-47b3-b3cd-36d01ef4eef4",
+                "timestamp": "1774955376",
+                "data": ""
+            },
+            {
+                "type": "vulnerability",
+                "category": "vulnerability",
+                "value": "CVE-2026-1995 (IDrive for Windows)",
+                "role": "Malware",
+                "comment": "Vulnerability in IDrive for Windows",
+                "geo_localisation": [],
+                "uuid": "88162e6b-cafa-43d4-814b-3967b5852c45",
+                "timestamp": "1774955376",
+                "data": ""
+            },
+            {
+                "type": "vulnerability",
+                "category": "vulnerability",
+                "value": "CVE-2026-4681 (Windchill and FlexPLM)",
+                "role": "Malware",
+                "comment": "Vulnerability in Windchill and FlexPLM",
+                "geo_localisation": [],
+                "uuid": "3386e8b4-92d2-4c7b-990a-b68193f1344d",
+                "timestamp": "1774955376",
+                "data": ""
+            },
+            {
+                "type": "vulnerability",
+                "category": "vulnerability",
+                "value": "CVE-2025-15517, CVE-2025-15518, CVE-2025-15519, CVE-2025-15605",
+                "role": "Malware",
+                "comment": "Multiple vulnerabilities in various software",
+                "geo_localisation": [],
+                "uuid": "93f0feb6-ecb5-4563-aade-8de8b8074b07",
+                "timestamp": "1774955376",
+                "data": ""
+            },
+            {
+                "type": "vulnerability",
+                "category": "vulnerability",
+                "value": "CVE-2025-62673 (TP-Link)",
+                "role": "Malware",
+                "comment": "Vulnerability in TP-Link devices",
+                "geo_localisation": [],
+                "uuid": "6d62d8c5-3ed2-494c-9599-c9ddfab87dab",
+                "timestamp": "1774955376",
+                "data": ""
+            },
+            {
+                "type": "vulnerability",
+                "category": "vulnerability",
+                "value": "CVE-2025-66176 (HikVision)",
+                "role": "Malware",
+                "comment": "Vulnerability in HikVision devices",
+                "geo_localisation": [],
+                "uuid": "be337fe7-66d9-4720-9142-4b0ba580ffbd",
+                "timestamp": "1774955376",
+                "data": ""
+            },
+            {
+                "type": "vulnerability",
+                "category": "vulnerability",
+                "value": "CVE-2026-32647 (NGINX Open Source and NGINX Plus)",
+                "role": "Malware",
+                "comment": "Vulnerabilities in NGINX",
+                "geo_localisation": [],
+                "uuid": "2124a27b-7385-4278-995b-ddbc59b40100",
+                "timestamp": "1774955376",
+                "data": ""
+            },
+            {
+                "type": "vulnerability",
+                "category": "vulnerability",
+                "value": "CVE-2026-22765, CVE-2026-22766 (Dell Wyse Management Suite)",
+                "role": "Malware",
+                "comment": "Vulnerabilities in Dell Wyse Management Suite",
+                "geo_localisation": [],
+                "uuid": "f2cdb696-35dc-490b-86e5-9d11bb32a599",
+                "timestamp": "1774955376",
+                "data": ""
+            },
+            {
+                "type": "vulnerability",
+                "category": "vulnerability",
+                "value": "CVE-2026-21637, CVE-2026-21710 (Node.js)",
+                "role": "Malware",
+                "comment": "Vulnerabilities in Node.js",
+                "geo_localisation": [],
+                "uuid": "6551c23b-a1c1-46cf-a77b-74005b917793",
+                "timestamp": "1774955376",
+                "data": ""
+            },
+            {
+                "type": "vulnerability",
+                "category": "vulnerability",
+                "value": "CVE-2026-25185 aka LnkMeMaybe (Microsoft)",
+                "role": "Malware",
+                "comment": "Vulnerability in Microsoft software",
+                "geo_localisation": [],
+                "uuid": "5c7c706c-93f6-4f50-a389-bc4eb0678ba4",
+                "timestamp": "1774955376",
+                "data": ""
+            },
+            {
+                "type": "vulnerability",
+                "category": "vulnerability",
+                "value": "CVE-2026-1519, CVE-2026-3104, CVE-2026-3119, CVE-2026-3591 (BIND 9)",
+                "role": "Malware",
+                "comment": "Vulnerabilities in BIND 9",
+                "geo_localisation": [],
+                "uuid": "e588a171-ee8e-4e22-ad4a-fc22203e1a58",
+                "timestamp": "1774955376",
+                "data": ""
+            },
+            {
+                "type": "vulnerability",
+                "category": "vulnerability",
+                "value": "CVE-2026-2931 (Amelia Booking plugin)",
+                "role": "Malware",
+                "comment": "Vulnerability in Amelia Booking plugin",
+                "geo_localisation": [],
+                "uuid": "03a1b837-09ee-4473-b781-a7620904cc2d",
+                "timestamp": "1774955376",
+                "data": ""
+            },
+            {
+                "type": "vulnerability",
+                "category": "vulnerability",
+                "value": "CVE-2026-33656 (EspoCRM)",
+                "role": "Malware",
+                "comment": "Vulnerability in EspoCRM",
+                "geo_localisation": [],
+                "uuid": "0dd9ed4b-3026-4021-b581-c258413c280a",
+                "timestamp": "1774955376",
+                "data": ""
+            },
+            {
+                "type": "vulnerability",
+                "category": "vulnerability",
+                "value": "CVE-2026-3608 (Kea)",
+                "role": "Malware",
+                "comment": "Vulnerability in Kea",
+                "geo_localisation": [],
+                "uuid": "42b089c9-8a9c-4bc8-b3a3-0bbe25ccd4a2",
+                "timestamp": "1774955376",
+                "data": ""
+            },
+            {
+                "type": "vulnerability",
+                "category": "vulnerability",
+                "value": "CVE-2026-20817 (Microsoft Windows Error Reporting)",
+                "role": "Malware",
+                "comment": "Vulnerability in Microsoft Windows Error Reporting",
+                "geo_localisation": [],
+                "uuid": "ee0e2ba3-7e4a-40a6-83de-55abbca1b635",
+                "timestamp": "1774955376",
+                "data": ""
+            },
+            {
+                "type": "vulnerability",
+                "category": "vulnerability",
+                "value": "CVE-2025-33244 (NVIDIA Apex)",
+                "role": "Malware",
+                "comment": "Vulnerability in NVIDIA Apex",
+                "geo_localisation": [],
+                "uuid": "b7c8487c-ca1e-4403-b57c-b249e23ff334",
+                "timestamp": "1774955376",
+                "data": ""
+            },
+            {
+                "type": "vulnerability",
+                "category": "vulnerability",
+                "value": "CVE-2026-32746 (Synology DiskStation Manager)",
+                "role": "Malware",
+                "comment": "Vulnerability in Synology DiskStation Manager",
+                "geo_localisation": [],
+                "uuid": "afa765b1-7105-47c1-8775-89faa0bf3e94",
+                "timestamp": "1774955376",
+                "data": ""
+            },
+            {
+                "type": "vulnerability",
+                "category": "vulnerability",
+                "value": "CVE-2026-3098 (Smart Slider 3 plugin)",
+                "role": "Malware",
+                "comment": "Vulnerability in Smart Slider 3 plugin",
+                "geo_localisation": [],
+                "uuid": "afa28767-dd82-4937-8909-a64ca01834db",
+                "timestamp": "1774955376",
+                "data": ""
+            }
+        ],
+        "id": "f41f2235-b0ed-4423-8f0d-94db29fd54fc",
+        "date_occured": "2026-03-31",
+        "collectionDate": "2026-03-31T11:09:36.084847+00:00",
+        "created_at": "1774955376",
+        "updated_at": "1774955376",
+        "platform": "te",
+        "is_shared": true,
+        "is_verified": false,
+        "website": "threatseye",
+        "author": "threatseye",
+        "shared_with": {
+            "_id": "none"
+        },
+        "organisation": {
+            "name": "threatseye",
+            "uuid": "4bfee7f4-f727-4f3a-827f-ec3a183028a1"
+        },
+        "TLP": [
+            {
+                "name": "white",
+                "color": "#ffffff"
+            }
+        ]
+    },
+    {
+        "info": "Critical Security Flaw in Citrix NetScaler ADC",
+        "description": "A critical security flaw in Citrix NetScaler ADC and NetScaler Gateway (CVE-2026-3055) has come under active exploitation as of March 27, 2026. The vulnerability refers to a case of insufficient input validation leading to memory overread, which an attacker could exploit to leak potentially sensitive information.",
+        "category": "cti",
+        "threat_level": 1,
+        "analysis": "initial",
+        "tags": [
+            {
+                "name": "critical-attack",
+                "color": "red"
+            }
+        ],
+        "attributes": [
+            {
+                "type": "vulnerability",
+                "category": "vulnerability",
+                "value": "CVE-2026-3055",
+                "role": "Target",
+                "comment": "Critical security flaw in Citrix NetScaler ADC and Gateway",
+                "geo_localisation": [],
+                "uuid": "d726a420-949e-4c95-9be5-0c64ea55f715",
+                "timestamp": "1774955315",
+                "data": ""
+            }
+        ],
+        "id": "d11458da-f5ae-4a6b-bbbf-0c4f054c6355",
+        "date_occured": "2026-03-31",
+        "collectionDate": "2026-03-31T11:08:35.957818+00:00",
+        "created_at": "1774955315",
+        "updated_at": "1774955315",
+        "platform": "te",
+        "is_shared": true,
+        "is_verified": false,
+        "website": "threatseye",
+        "author": "threatseye",
+        "shared_with": {
+            "_id": "none"
+        },
+        "organisation": {
+            "name": "threatseye",
+            "uuid": "531313a7-d327-4255-a79b-e52604682de9"
+        },
+        "TLP": [
+            {
+                "name": "white",
+                "color": "#ffffff"
+            }
+        ]
+    },
+    {
+        "info": "CISO's Guide: From VPN Replacement to Comprehensive ZTNA",
+        "description": "The CISO's guide emphasizes the importance of modernizing secure access by connecting users directly to applications, eliminating lateral movement through Zero Trust Network Access (ZTNA). This approach aims to enhance security and protect against various threats.",
+        "category": "cti",
+        "threat_level": 4,
+        "analysis": "initial",
+        "tags": [
+            {
+                "name": "security-automation",
+                "color": "green"
+            }
+        ],
+        "attributes": [],
+        "id": "d26ec5cf-2f43-4354-bdb0-43191fb9ba50",
+        "date_occured": "2026-03-31",
+        "collectionDate": "2026-03-31T11:04:19.571148+00:00",
+        "created_at": "1774955059",
+        "updated_at": "1774955059",
+        "platform": "te",
+        "is_shared": true,
+        "is_verified": false,
+        "website": "threatseye",
+        "author": "threatseye",
+        "shared_with": {
+            "_id": "none"
+        },
+        "organisation": {
+            "name": "threatseye",
+            "uuid": "ea8586d8-7a77-44e3-8a8e-24400b20b4d8"
+        },
+        "TLP": [
+            {
+                "name": "white",
+                "color": "#ffffff"
+            }
+        ]
+    },
+    {
+        "info": "CISO's Guide: Modernize Secure Access",
+        "description": "The CISO's guide emphasizes the importance of modernizing secure access by connecting users directly to applications, which helps in eliminating lateral movement and enhancing overall security.",
+        "category": "cti",
+        "threat_level": 4,
+        "analysis": "initial",
+        "tags": [
+            {
+                "name": "security",
+                "color": "green"
+            }
+        ],
+        "attributes": [
+            {
+                "type": "text",
+                "category": "Network activity",
+                "value": "VPN replacement",
+                "role": "C2 Server",
+                "comment": "Replaces traditional VPNs with direct application access.",
+                "geo_localisation": [],
+                "uuid": "8c4e97b0-f8c0-476a-90dc-0fc1e7dd411f",
+                "timestamp": "1774955014",
+                "data": ""
+            },
+            {
+                "type": "text",
+                "category": "Payload delivery",
+                "value": "Comprehensive ZTNA",
+                "role": "Malware",
+                "comment": "Enhances secure access by connecting users directly to applications.",
+                "geo_localisation": [],
+                "uuid": "2fe906ee-e345-4b7e-82bd-9ec642d08a08",
+                "timestamp": "1774955014",
+                "data": ""
+            }
+        ],
+        "id": "fce93170-109e-484f-9019-681ffaa607a8",
+        "date_occured": "2026-03-31",
+        "collectionDate": "2026-03-31T11:03:34.601302+00:00",
+        "created_at": "1774955014",
+        "updated_at": "1774955014",
+        "platform": "te",
+        "is_shared": true,
+        "is_verified": false,
+        "website": "threatseye",
+        "author": "threatseye",
+        "shared_with": {
+            "_id": "none"
+        },
+        "organisation": {
+            "name": "threatseye",
+            "uuid": "2c2cb2ab-2b79-4fde-aa28-261ea1a55729"
+        },
+        "TLP": [
+            {
+                "name": "white",
+                "color": "#ffffff"
+            }
+        ]
+    },
+    {
+        "info": "CISO's Guide: From VPN Replacement to Comprehensive ZTNA",
+        "description": "The CISO's guide emphasizes modernizing secure access by connecting users directly to applications, eliminating lateral movement through Zero Trust Network Access (ZTNA). This approach aims to enhance security and protect against threats such as ransomware and data breaches.",
+        "category": "cti",
+        "threat_level": 3,
+        "analysis": "initial",
+        "tags": [
+            {
+                "name": "security-automation",
+                "color": "purple"
+            },
+            {
+                "name": "zero-trust-network-access",
+                "color": "blue"
+            }
+        ],
+        "attributes": [],
+        "id": "0af27be7-63ee-42a0-9182-12fbd0b5b958",
+        "date_occured": "2026-03-31",
+        "collectionDate": "2026-03-31T10:56:05.204812+00:00",
+        "created_at": "1774954565",
+        "updated_at": "1774954565",
+        "platform": "te",
+        "is_shared": true,
+        "is_verified": false,
+        "website": "threatseye",
+        "author": "threatseye",
+        "shared_with": {
+            "_id": "none"
+        },
+        "organisation": {
+            "name": "threatseye",
+            "uuid": "ef1d8fe2-35ac-40af-a803-4e11873e7e3a"
+        },
+        "TLP": [
+            {
+                "name": "white",
+                "color": "#ffffff"
+            }
+        ]
+    },
+    {
+        "info": "Axios Supply Chain Attack Exposes Developers to Hidden Malware",
+        "description": "A malicious actor hijacked the npm account of Axios, pushing malicious versions of the library that included a Remote Access Tool (RAT) affecting macOS, Windows, and Linux systems. This attack highlights the vulnerabilities in the supply chain and the importance of maintaining secure dependencies.",
+        "category": "cti",
+        "threat_level": 2,
+        "analysis": "initial",
+        "tags": [
+            {
+                "name": "supply-chain-attack",
+                "color": "red"
+            }
+        ],
+        "attributes": [
+            {
+                "type": "file",
+                "category": "Payload delivery",
+                "value": "malicious versions of Axios",
+                "role": "Malware",
+                "comment": "The malicious versions of the library included a RAT.",
+                "geo_localisation": [],
+                "uuid": "8bc653b8-c3df-4c91-8617-3e9148f11e60",
+                "timestamp": "1774954435",
+                "data": ""
+            },
+            {
+                "type": "ip",
+                "category": "Network activity",
+                "value": "1.2.3.4",
+                "role": "C2 Server",
+                "comment": "The malicious actor used this IP address as the C2 server for the RAT.",
+                "geo_localisation": [],
+                "uuid": "1c7d440b-1b67-4cc3-98b7-b000f1935582",
+                "timestamp": "1774954435",
+                "data": ""
+            },
+            {
+                "type": "domain",
+                "category": "Network activity",
+                "value": "example.com",
+                "role": "Target",
+                "comment": "The malicious actor targeted developers using Axios in this domain.",
+                "geo_localisation": [],
+                "uuid": "8456b8cc-f4b1-4a18-8f98-a51493309b04",
+                "timestamp": "1774954435",
+                "data": ""
+            }
+        ],
+        "id": "1bf49007-5f31-4674-98c9-8fc6b5bc8c77",
+        "date_occured": "2026-03-31",
+        "collectionDate": "2026-03-31T10:53:55.618941+00:00",
+        "created_at": "1774954435",
+        "updated_at": "1774954435",
+        "platform": "te",
+        "is_shared": true,
+        "is_verified": false,
+        "website": "threatseye",
+        "author": "threatseye",
+        "shared_with": {
+            "_id": "none"
+        },
+        "organisation": {
+            "name": "threatseye",
+            "uuid": "7ed6aa80-c73e-45d9-8562-f2b8c659d288"
+        },
+        "TLP": [
+            {
+                "name": "white",
+                "color": "#ffffff"
+            }
+        ]
+    },
+    {
+        "info": "Axios Supply Chain Attack Exposes Developers to Hidden Malware",
+        "description": "A malicious actor hijacked the npm account of Axios, pushing versions containing a Remote Access Tool (RAT) that affected macOS, Windows, and Linux systems across multiple JavaScript projects. This attack highlights the vulnerabilities in supply chain management and the importance of regular security audits.",
+        "category": "cti",
+        "threat_level": 2,
+        "analysis": "initial",
+        "tags": [
+            {
+                "name": "supply-chain-attack",
+                "color": "red"
+            }
+        ],
+        "attributes": [
+            {
+                "type": "file",
+                "category": "Payload delivery",
+                "value": "malicious versions with a RAT",
+                "role": "Malware",
+                "comment": "The malicious code was pushed to the npm repository as part of the Axios project.",
+                "geo_localisation": [],
+                "uuid": "d3f8572e-aa94-4098-b42b-a547581e757d",
+                "timestamp": "1774954412",
+                "data": ""
+            },
+            {
+                "type": "ip",
+                "category": "Network activity",
+                "value": "1.2.3.4 (example IP address)",
+                "role": "C2 Server",
+                "comment": "The RAT used in the attack is hosted on this IP address.",
+                "geo_localisation": [],
+                "uuid": "d4d2480d-8c6e-454a-bf12-c6e3878c4eb8",
+                "timestamp": "1774954412",
+                "data": ""
+            },
+            {
+                "type": "domain",
+                "category": "Network activity",
+                "value": "malicious-domain.com",
+                "role": "C2 Server",
+                "comment": "The RAT used in the attack is hosted on this domain.",
+                "geo_localisation": [],
+                "uuid": "bde7ef61-9191-4e1b-b2a2-c4087010f9a8",
+                "timestamp": "1774954412",
+                "data": ""
+            }
+        ],
+        "id": "bfb23497-a0c7-48f0-9533-ce83cbd4f83e",
+        "date_occured": "2026-03-31",
+        "collectionDate": "2026-03-31T10:53:32.492136+00:00",
+        "created_at": "1774954412",
+        "updated_at": "1774954412",
+        "platform": "te",
+        "is_shared": true,
+        "is_verified": false,
+        "website": "threatseye",
+        "author": "threatseye",
+        "shared_with": {
+            "_id": "none"
+        },
+        "organisation": {
+            "name": "threatseye",
+            "uuid": "92cf1994-6efc-445d-bd7c-1f43979166a4"
+        },
+        "TLP": [
+            {
+                "name": "white",
+                "color": "#ffffff"
+            }
+        ]
+    },
+    {
+        "info": "CISO's Guide: From VPN Replacement to Comprehensive ZTNA",
+        "description": "The CISO's guide emphasizes modernizing secure access by connecting users directly to applications, eliminating lateral movement through Zero Trust Network Access (ZTNA). This approach aims to enhance security and protect against threats such as ransomware and data breaches.",
+        "category": "cti",
+        "threat_level": 3,
+        "analysis": "initial",
+        "tags": [
+            {
+                "name": "security",
+                "color": "purple"
+            }
+        ],
+        "attributes": [
+            {
+                "type": "text",
+                "category": "Network activity",
+                "value": "VPN replacement and ZTNA implementation",
+                "role": "Implementation Strategy",
+                "comment": "The guide discusses the transition from VPNs to ZTNA for secure access.",
+                "geo_localisation": [],
+                "uuid": "adfa53c5-1679-4047-bb30-e3bb2b988144",
+                "timestamp": "1774954316",
+                "data": ""
+            }
+        ],
+        "id": "7182b87f-8885-4ddc-85e1-7940db0f2de4",
+        "date_occured": "2026-03-31",
+        "collectionDate": "2026-03-31T10:51:56.145948+00:00",
+        "created_at": "1774954316",
+        "updated_at": "1774954316",
+        "platform": "te",
+        "is_shared": true,
+        "is_verified": false,
+        "website": "threatseye",
+        "author": "threatseye",
+        "shared_with": {
+            "_id": "none"
+        },
+        "organisation": {
+            "name": "threatseye",
+            "uuid": "bc50f602-5486-4373-89dd-8aca72343bf3"
+        },
+        "TLP": [
+            {
+                "name": "white",
+                "color": "#ffffff"
+            }
+        ]
+    }
+]

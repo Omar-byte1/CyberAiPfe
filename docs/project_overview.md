@@ -1,0 +1,338 @@
+# Système Automatisé de Collecte et de Contextualisation de Données de Cybermenaces avec Agents IA
+
+## 1. Introduction
+
+Avec l’augmentation des cyberattaques, il devient important de surveiller les informations liées aux menaces informatiques. Ces informations peuvent provenir de plusieurs sources comme les actualités cybersécurité, les forums ou le dark web.
+
+Cependant, ces données sont souvent non structurées et difficiles à exploiter directement.
+
+Ce projet consiste à développer un système automatisé capable de collecter des données de cybermenaces, d’extraire les informations importantes comme les IOCs, les malwares, les acteurs de menace ou les fuites de données, puis de contextualiser ces informations.
+
+Le système utilisera des agents basés sur l’intelligence artificielle pour analyser les données et générer des insights automatiquement.
+
+## 2. Contexte et Problématique
+
+Les analystes en cybersécurité doivent surveiller plusieurs sources pour détecter les nouvelles menaces.
+
+Ces sources peuvent contenir des informations comme :
+
+- Attaques informatiques
+- Malwares
+- Fuites de données
+- Données du dark web
+- Acteurs de menace
+- Indicateurs de compromission (IOCs)
+
+Cependant :
+
+- Les données sont dispersées
+- Les formats sont différents
+- Les données sont non structurées
+- L’analyse manuelle prend du temps
+
+Il est donc nécessaire d’automatiser la collecte et l’analyse de ces données.
+
+Le défi est de concevoir un système capable de collecter ces informations automatiquement et d’utiliser l’intelligence artificielle pour en extraire des informations utiles.
+
+## 3. Objectifs du Projet
+
+### Objectif général :
+
+Développer un système automatisé permettant la collecte et la contextualisation de données de cybermenaces en utilisant des agents basés sur l’intelligence artificielle.
+
+### Objectifs spécifiques :
+
+- Collecter automatiquement les données
+- Extraire les informations importantes
+- Identifier les IOCs
+- Détecter les malwares et attaques
+- Contextualiser les données
+- Générer des insights avec l’IA
+- Automatiser les tâches
+- Stocker les résultats
+- Déployer le système
+
+## 4. Architecture et Stack Technique
+
+### Stack Logicielle
+
+- **Langage**: Python (Backend), Node.js (Frontend)
+- **Framework Web**: FastAPI + Uvicorn
+- **Base de données**: Fichiers JSON (Initialement)
+- **Gestion de version**: Git
+
+### Organisation des Dossiers
+
+- `backend/`: Logique de collecte, traitement, filtrage, détection d'anomalies ML et moteur IA.
+- `backend/anomaly_detector.py`: Nouveau module utilisant **Isolation Forest** pour détecter les comportements anormaux dans les logs.
+- `frontend/`: Interface utilisateur pour la visualisation des alertes SOC.
+- `data/`: Stockage des datasets bruts, nettoyés et alertes.
+- `docs/`: Documentation du projet et roadmap.
+- `rules/`: Règles de détection d'IOC et de corrélation.
+
+## 5. Flux de Traitement (Pipeline CTI)
+
+```mermaid
+graph TD
+    A[Threat sources] --> B[CVE collection]
+    B --> C[dataset cleaning]
+    C --> D[critical CVE filter]
+    D --> E[log correlation]
+    E --> F[alerts]
+    F --> G[AI Engine]
+    G --> H[ML anomaly detection]
+    H --> I[threat_report.json]
+```
+
+1. **Threat sources** : Sources de données brutes (NVD, AlienVault, etc.)
+2. **CVE collection** : Récupération des données via API.
+3. **dataset cleaning** : Nettoyage et normalisation des données JSON.
+4. **critical CVE filter** : Filtrage des vulnérabilités à haut score (CVSS).
+5. **log correlation** : Comparaison des logs système avec les CVE identifiées.
+6. **alerts** : Génération des premières alertes de sécurité.
+7. **AI Engine** : Analyse intelligente des alertes consolidées.
+8. **ML anomaly detection** : Détection des comportements anormaux par Isolation Forest.
+9. **threat_report.json** : Génération du rapport final pour le SOC.
+
+## 6. Prochaines Étapes et Roadmap
+
+### Phase 1 : Consolidation Backend (En cours)
+
+- Nettoyage et filtrage des données critiques.
+- Corrélation robuste Logs <-> CVE.
+- Génération du fichier `alerts.json` prédictif.
+
+### Phase 2 : Intégration IA (AI Engine)
+
+- Développement d'un agent IA pour l'analyse des logs en temps réel.
+- Entraînement de l'agent sur les patterns d'attaques connus (IOC/CVE).
+- Automatisation du rapport de menace et prédiction des vulnérabilités.
+
+### Phase 3 : Interface SOC (Frontend)
+
+- Mise en place de l'API FastAPI pour exposer les données.
+- Création du dashboard avec Node.js pour visualiser les alertes et insights.
+
+## 7. Améliorations Futures (Roadmap SOC Avancé)
+
+Pour rendre la plateforme encore plus performante, les étapes suivantes sont prévues :
+
+1.  **Visualisation de Données (Chart.js)** :
+    - Intégration de graphiques dynamiques sur le dashboard.
+    - Distribution des attaques (CVE exploitation vs ML anomaly vs Critical logs).
+2.  **Enrichissement du Threat Report** :
+    - Page dédiée affichant les prédictions détaillées, recommandations et niveaux SOC générés par l'AI Engine.
+3.  **Cartographie Mondiale des Menaces (Leaflet)** :
+    - Carte interactive pour géolocaliser les adresses IP sources des attaques détectées dans les logs.
+
+## 8. Architecture Finale du Système
+
+```mermaid
+graph TD
+    subgraph "Frontend (Next.js)"
+        UI[SOC Dashboard]
+        Charts[Chart.js / Leaflet]
+    end
+
+    subgraph "Backend (FastAPI)"
+        API[API Endpoints]
+        AI[AI Engine]
+        ML[ML Anomaly Detection]
+    end
+
+    subgraph "Data & Analytics"
+        CORR[Logs & CVE Correlation]
+        DATA[JSON Datasets]
+    end
+
+    UI <--> API
+    API <--> AI
+    AI <--> ML
+    ML <--> CORR
+    CORR <--> DATA
+```
+
+## 9. Guide d'Intégration et Lancement
+
+### CI/CD et Pipelines de Déploiement
+
+Le projet suit un flux de travail Git standard pour assurer la stabilité du code.
+
+```mermaid
+graph LR
+    A[Modification Code] --> B[Tests Locaux]
+    B --> C[Git Add / Commit]
+    C --> D[Git Push]
+    D --> E[GitHub Repository]
+```
+
+### Commandes Git pour la mise à jour du projet
+
+Pour mettre à jour le projet et envoyer les modifications sur GitHub, utilisez les commandes suivantes dans votre terminal :
+
+```powershell
+# 1. Ajouter toutes les modifications
+git add .
+
+# 2. Créer un commit avec un message descriptif
+git commit -m "Description de vos modifications (ex: Mise à jour du dashboard)"
+
+# 3. Pousser les modifications sur la branche master
+git push origin master
+```
+
+### Lancement du Projet
+
+**Étape 1 : Lancer le Backend (API FastAPI)**
+
+```powershell
+# Depuis la racine du projet
+.\venv\Scripts\python.exe -m backend.api
+```
+
+_L'API sera disponible sur http://127.0.0.1:8000_
+
+**Étape 2 : Lancer le Frontend (Next.js Dashboard)**
+
+```powershell
+# Dans un second terminal
+cd frontend/nextjs-dashboard
+npm run dev
+```
+
+_Le dashboard sera disponible sur http://localhost:3000_
+
+### Erreurs résolues et Points de vigilance
+
+1.  **Gestion des Chemins (Windows)** :
+    - **Problème** : Erreurs Turbopack dues aux caractères spéciaux (`é`) dans les chemins OneDrive.
+    - **Solution** : Utilisation forcée de **Webpack** dans le `package.json` (`next dev --webpack`).
+2.  **CORS (Cross-Origin Resource Sharing)** :
+    - **Problème** : Le navigateur bloque les requêtes du frontend (port 3000) vers le backend (port 8000).
+    - **Solution** : Ajout du `CORSMiddleware` dans `backend/api.py` pour autoriser `http://localhost:3000`.
+3.  **Environnement Virtuel (venv)** :
+    - **Problème** : `ModuleNotFoundError: No module named 'uvicorn'`.
+    - **Solution** : Installation explicite des dépendances via `.\venv\Scripts\python.exe -m pip install -r requirements.txt`. Toujours utiliser le chemin complet vers l'exécutable du venv pour garantir l'utilisation du bon environnement.
+4.  **Problème de Port Occupé** :
+    - **Problème** : Le serveur semble "charger" sans s'arrêter ou échoue à se lancer avec une erreur `Errno 10048`.
+    - **Solution** : Vérifier si une autre instance utilise le port 8000 (`netstat -ano | findstr :8000`) et tuer le processus (`taskkill /F /PID <PID>`). Nous avons aussi désactivé `reload=True` pour plus de stabilité sur OneDrive.
+
+LES SITES D'EXTRACTION DES DONNES BRUTES
+AlienVault
+National Vulnerability Database
+MISP
+Abuse.ch, URLhaus, ThreatFox
+
+## 10. Journal de Modifications (aujourd'hui)
+
+- Page login isolée : `app/login/page.tsx` est maintenant hors dashboard.
+- Redirection racine : `app/page.tsx` redirige vers `/login`.
+- Layout global (`app/layout.tsx`) simplifié.
+- Sidebar conservé pour les pages sécurisées via layouts spécifiques :
+  - `app/dashboard/layout.tsx`
+  - `app/alerts/layout.tsx`
+  - `app/cve/layout.tsx`
+  - `app/threat-report/layout.tsx`
+- Typage strict sur les données front-end (useState<...>, garde-types de validation).
+- Correction des erreurs TypeScript/ESLint `no-explicit-any` et warnings.
+- Lint Clean : `npm run lint` passe sans erreurs.
+
+# Overview (travail effectué) jour 12
+
+Ce document résume **les tâches réalisées** sur le dashboard CTI (Next.js/TS/Tailwind) pendant cette session, et où trouver les changements.
+
+## Changements principaux
+
+### Page Alerts — filtrage SOC Level
+
+- **Ajout d’un filtre dynamique** par `soc_level` via un `<select>` (options SOC 1/2/3 + All).
+- **État React**: `filter` (valeur par défaut: `"ALL"`).
+- **Comportement**: `ALL` affiche toutes les alertes, sinon filtre strict sur `alert.soc_level`.
+
+### Page Alerts — `threat_score` et `soc_level` “cohérents” même si le backend ne les fournit pas
+
+Constat: l’endpoint FastAPI **`GET /alerts`** renvoie souvent des items sans `soc_level` / `threat_score` (ces champs sont plutôt dans `threat_report.json`).
+
+Solution (frontend):
+
+- Enrichissement des items côté client après le fetch:
+  - `threat_score` est calculé de façon compatible avec `backend/ai_engine.py`:
+    - \(threat_score = severity + (cve_id == "ML-ANOMALY" ? 1 : 0)\)
+  - `soc_level` est déduit du `threat_score`:
+    - \(>= 9\) → **SOC Level 3 - Critical Threat**
+    - \(>= 7\) → **SOC Level 2 - High Risk**
+    - sinon → **SOC Level 1 - Stable**
+- **Objectif**: rendre le filtre SOC fonctionnel et donner une valeur stable au Threat Score sans casser le fetch existant.
+
+### Page Alerts — tri (sorting) par sévérité
+
+- **Ajout d’un tri** sur `severity`.
+- **État React**:
+  - `sortOrder`: `"ASC" | "DESC"` (défaut: `"DESC"`).
+- **Règle**:
+  - `DESC` → sévérité la plus haute en premier
+  - `ASC` → sévérité la plus basse en premier
+- **Sans mutation**: tri fait sur une copie `sortedAlerts = [...filteredAlerts].sort(...)`.
+- **Ordre correct**: **filtrer d’abord**, **trier ensuite**.
+
+### Page Alerts — amélioration esthétique (UI)
+
+- Barre de contrôle refaite en “card” (fond léger + blur + border + shadow).
+- Labels clairs au-dessus des inputs (Search / SOC level / Severity sort).
+- Responsive: 1 colonne sur mobile, 3 colonnes sur desktop.
+- Style Tailwind amélioré (focus ring, hover border, alignements).
+
+## Fichiers modifiés
+
+- `frontend/nextjs-dashboard/src/app/alerts/page.tsx`
+  - Filtre SOC + tri severity
+  - Enrichissement `soc_level`/`threat_score`
+  - UI controls améliorée
+
+## Comment tester rapidement
+
+### Backend (FastAPI)
+
+Depuis la racine:
+
+```powershell
+.\venv\Scripts\python.exe -m backend.api
+```
+
+Endpoints utiles:
+
+- `GET http://127.0.0.1:8000/alerts`
+- `POST http://127.0.0.1:8000/run-analysis`
+- `GET http://127.0.0.1:8000/threat-report`
+
+### Frontend (Next.js)
+
+```powershell
+cd frontend/nextjs-dashboard
+npm run dev
+```
+
+Ouvrir:
+
+- `http://localhost:3000/alerts`
+
+Vérifications attendues:
+
+- Le filtre SOC Level doit réduire/étendre la table selon la sélection.
+- Le tri “Highest first / Lowest first” doit réordonner les lignes par `severity`.
+- La colonne “Threat Score” doit afficher une valeur stable (même si `threat_score` n’est pas fourni par le backend).
+
+## Notes Git (push)
+
+- Si ta branche locale est `master`, pousser avec:
+
+```powershell
+git push -u origin master
+```
+
+- Si tu veux utiliser `main`:
+
+```powershell
+git branch -M main
+git push -u origin main
+```
