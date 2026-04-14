@@ -1,197 +1,221 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import rawCves from '../../../../../../data/clean_cve.json';
-import { ExternalLink, Search, ShieldAlert, ChevronDown, ChevronUp, X, Flame } from 'lucide-react';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import { useAlertContext } from '@/contexts/AlertContext';
+import rawCveData from '../../../../../../data/cve_sample.json';
+import { ExternalLink, Search, ShieldAlert, ChevronDown, ChevronUp, X, Flame, FileText, Link as LinkIcon } from 'lucide-react';
 
-interface CveItem {
-  cve_id: string;
-  description: string;
-  score: number;
-  severity: string;
-}
+export default function CVEDashboard() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [severityFilter, setSeverityFilter] = useState('ALL');
+  const [expandedCVE, setExpandedCVE] = useState<string | null>(null);
 
-const cves = rawCves as CveItem[];
-
-function getSeverityClasses(severity: string): string {
-  const normalized = severity.toUpperCase();
-  if (normalized === 'CRITICAL' || normalized === 'HIGH') return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800/50';
-  if (normalized === 'MEDIUM') return 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800/50';
-  return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800/50';
-}
-
-export default function CveExplorerPage() {
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  const [showActiveOnly, setShowActiveOnly] = useState(false);
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [cvesPerPage] = useState<number>(10);
-  const { alerts } = useAlertContext();
-
-  const activeCveIds = useMemo(() => {
-    return new Set(alerts.map(a => a.cve_id));
-  }, [alerts]);
+  // Handle both NIST structure (vulnerabilities array) and flat array
+  const cveList = useMemo(() => {
+    if (Array.isArray(rawCveData)) return rawCveData;
+    if (rawCveData && (rawCveData as any).vulnerabilities) {
+      return (rawCveData as any).vulnerabilities.map((v: any) => v.cve);
+    }
+    return [];
+  }, []);
 
   const filteredCves = useMemo(() => {
-    let result = cves;
+    return cveList.filter((cve: any) => {
+      const basicScore = cve?.metrics?.cvssMetricV31?.[0]?.cvssData?.baseScore || 
+                         cve?.metrics?.cvssMetricV2?.[0]?.cvssData?.baseScore || 
+                         cve?.score || 0;
+      const cveId = (cve?.id || cve?.cve_id || '').toLowerCase();
+      const desc = (cve?.descriptions?.[0]?.value || cve?.description || '').toLowerCase();
+      
+      const termLower = searchTerm.toLowerCase();
+      const matchesSearch = cveId.includes(termLower) || desc.includes(termLower);
 
-    if (showActiveOnly) {
-      result = result.filter(cve => activeCveIds.has(cve.cve_id));
-    }
+      let matchesSeverity = true;
+      if (severityFilter === 'CRITICAL') matchesSeverity = basicScore >= 9.0;
+      else if (severityFilter === 'HIGH') matchesSeverity = basicScore >= 7.0 && basicScore < 9.0;
+      else if (severityFilter === 'MEDIUM') matchesSeverity = basicScore >= 4.0 && basicScore < 7.0;
 
-    const term = searchTerm.trim().toLowerCase();
-    if (term) {
-      result = result.filter((cve) => 
-        cve.cve_id.toLowerCase().includes(term) || 
-        cve.description.toLowerCase().includes(term)
-      );
-    }
+      return matchesSearch && matchesSeverity;
+    }).sort((a: any, b: any) => {
+      const scoreA = a?.metrics?.cvssMetricV31?.[0]?.cvssData?.baseScore || a?.metrics?.cvssMetricV2?.[0]?.cvssData?.baseScore || a?.score || 0;
+      const scoreB = b?.metrics?.cvssMetricV31?.[0]?.cvssData?.baseScore || b?.metrics?.cvssMetricV2?.[0]?.cvssData?.baseScore || b?.score || 0;
+      return scoreB - scoreA;
+    });
+  }, [cveList, searchTerm, severityFilter]);
 
-    return result;
-  }, [searchTerm, showActiveOnly, activeCveIds]);
+  const getScoreBadge = (score: number) => {
+    if (score >= 9.0) return 'bg-rose-500/10 border border-rose-500/30 text-rose-400 shadow-[0_0_15px_-3px_rgba(244,63,94,0.3)]';
+    if (score >= 7.0) return 'bg-orange-500/10 border border-orange-500/30 text-orange-400 shadow-[0_0_15px_-3px_rgba(249,115,22,0.3)]';
+    if (score >= 4.0) return 'bg-amber-500/10 border border-amber-500/30 text-amber-400';
+    return 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400';
+  };
 
-  // Reset to first page when filters change
-  useMemo(() => {
-    setCurrentPage(1);
-  }, [searchTerm, showActiveOnly]);
-
-  // Pagination bounds
-  const indexOfLastCve = currentPage * cvesPerPage;
-  const indexOfFirstCve = indexOfLastCve - cvesPerPage;
-  const currentCves = filteredCves.slice(indexOfFirstCve, indexOfLastCve);
-  const totalPages = Math.ceil(filteredCves.length / cvesPerPage) || 1;
-
-  const toggleDetails = (id: string) => {
-    const next = new Set(expandedIds);
-    next.has(id) ? next.delete(id) : next.add(id);
-    setExpandedIds(next);
+  const getSeverityLabel = (score: number) => {
+    if (score >= 9.0) return 'CRITIQUE';
+    if (score >= 7.0) return 'ÉLEVÉ';
+    if (score >= 4.0) return 'MODÉRÉ';
+    return 'FAIBLE';
   };
 
   return (
-    <main className="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6 animate-in fade-in duration-500">
-      {/* Header with Theme Toggle */}
-      <div className="flex justify-end mb-2">
-        <ThemeToggle />
-      </div>
-
-      {/* Hero Section */}
-      <section className="relative overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800 bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 p-6 text-white shadow-xl sm:p-8">
-        <div className="relative z-10 space-y-3">
-          <p className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold">
-            <ShieldAlert className="h-3.5 w-3.5" />
-            Threat Intelligence Module
-          </p>
-          <h1 className="text-3xl font-black tracking-tight sm:text-4xl">CVE Explorer</h1>
-          <p className="max-w-2xl text-sm text-slate-200 sm:text-base">
-            Accessing {cves.length} local records. High-fidelity vulnerability data for automated analysis.
+    <div className="space-y-8 animate-in fade-in duration-700 max-w-[1600px] mx-auto pb-20">
+      
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+        <div>
+          <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-500 tracking-tight mb-2">
+            Base <span className="text-rose-400">CVE</span>
+          </h1>
+          <p className="text-xs font-bold tracking-widest uppercase text-zinc-500 flex items-center gap-2">
+            <Flame className="w-4 h-4 text-rose-500" />
+            Vulnerabilities & Exposures Reference
           </p>
         </div>
-      </section>
-
-      {/* Search Bar & Active Filter */}
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 p-4 shadow-sm backdrop-blur sm:p-5">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by ID or keywords (e.g. 'Buffer Overflow')..."
-              className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent py-3 pl-10 pr-10 text-sm text-slate-900 dark:text-slate-100 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:focus:ring-blue-500/20 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+        
+        <div className="bg-[#0a0a0a]/50 backdrop-blur-xl rounded-2xl border border-white/[0.05] p-3 flex flex-wrap gap-4 items-center relative overflow-hidden shadow-2xl">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 blur-[50px] pointer-events-none" />
+          
+          <div className="relative group z-10 w-64">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-rose-400 transition-colors" />
+            <input 
+              type="text" placeholder="Rechercher CVE-2024..." 
+              className="w-full pl-10 pr-4 py-2.5 bg-[#030303] border border-white/[0.05] text-white rounded-xl text-xs font-medium focus:border-rose-500/50 outline-none transition-all placeholder:text-zinc-600"
+              value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
             />
-            {searchTerm && (
-              <button 
-                onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
           </div>
           
-          <button
-            onClick={() => setShowActiveOnly(!showActiveOnly)}
-            className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold transition-all whitespace-nowrap ${
-              showActiveOnly 
-                ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800/50 shadow-inner' 
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
-            }`}
+          <select 
+            className="px-4 py-2.5 bg-[#030303] border border-white/[0.05] text-zinc-300 rounded-xl text-xs font-bold uppercase tracking-widest outline-none z-10 cursor-pointer focus:border-rose-500/50 transition-all custom-select"
+            value={severityFilter} onChange={(e) => setSeverityFilter(e.target.value)}
           >
-            <Flame className={`w-4 h-4 ${showActiveOnly ? 'animate-pulse' : ''}`} />
-            Active Threats ({activeCveIds.size})
-          </button>
+            <option value="ALL" className="bg-[#0a0a0a] text-zinc-300">TOUTES CATÉGORIES</option>
+            <option value="CRITICAL" className="bg-[#0a0a0a] text-zinc-300">CRITIQUE (9.0+)</option>
+            <option value="HIGH" className="bg-[#0a0a0a] text-zinc-300">ÉLEVÉ (7.0 - 8.9)</option>
+            <option value="MEDIUM" className="bg-[#0a0a0a] text-zinc-300">MODÉRÉ (4.0 - 6.9)</option>
+          </select>
         </div>
-        <p className="mt-2 text-[10px] font-medium uppercase tracking-widest text-slate-400 dark:text-slate-500 px-2">
-          Showing {filteredCves.length} results
-        </p>
       </div>
 
-      {/* Results Grid */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {currentCves.map((cve) => {
-          const isExpanded = expandedIds.has(cve.cve_id);
-          return (
-            <article key={cve.cve_id} className="group rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm transition-all hover:shadow-md">
-              <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400">{cve.cve_id}</span>
-                  <div className="flex items-center gap-2">
-                    <span className={`rounded-md border px-2 py-0.5 text-xs font-bold uppercase ${getSeverityClasses(cve.severity)}`}>
-                      {cve.severity}
-                    </span>
-                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">CVSS {cve.score.toFixed(1)}</span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => toggleDetails(cve.cve_id)}
-                  className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                >
-                  {isExpanded ? <ChevronUp /> : <ChevronDown />}
-                </button>
-              </div>
+      <div className="bg-[#0a0a0a]/50 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/[0.05] relative overflow-hidden min-h-[500px]">
+        <div className="absolute bottom-0 right-0 w-64 h-64 bg-rose-500/5 blur-[100px] pointer-events-none" />
 
-              {isExpanded && (
-                <div className="mt-4 space-y-4 border-t border-slate-100 dark:border-slate-800 pt-4 animate-in slide-in-from-top-2">
-                  <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">{cve.description}</p>
-                  <a
-                    href={`https://nvd.nist.gov/vuln/detail/${cve.cve_id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 rounded-lg bg-slate-100 dark:bg-slate-800 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 transition hover:bg-slate-200 dark:hover:bg-slate-700"
+        <div className="p-6 border-b border-white/[0.05] relative z-10">
+          <p className="text-xs font-bold tracking-widest uppercase text-zinc-500">
+            {filteredCves.length} vulnérabilité(s) trouvée(s)
+          </p>
+        </div>
+
+        <div className="divide-y divide-white/[0.03] relative z-10 max-h-[700px] overflow-y-auto custom-scrollbar">
+          {filteredCves.length === 0 ? (
+             <div className="p-20 text-center text-zinc-500 font-bold uppercase tracking-widest text-xs">Aucune correspondance trouvée.</div>
+          ) : (
+            filteredCves.map((cve: any, index: number) => {
+              const cvssData = cve?.metrics?.cvssMetricV31?.[0]?.cvssData || cve?.metrics?.cvssMetricV2?.[0]?.cvssData;
+              const baseScore = cvssData?.baseScore || cve?.score || 0;
+              const cveId = cve?.id || cve?.cve_id || `CVE-UNKNOWN-${index}`;
+              const description = cve?.descriptions?.find((d: any) => d.lang === 'en')?.value || cve?.description || 'No description available.';
+              const isExpanded = expandedCVE === cveId;
+
+              return (
+                <div key={cveId} className="transition-all hover:bg-white/[0.02]">
+                  <div 
+                    onClick={() => setExpandedCVE(isExpanded ? null : cveId)}
+                    className="p-6 flex flex-col md:flex-row items-start md:items-center justify-between cursor-pointer gap-4 group"
                   >
-                    <ExternalLink className="h-3 w-3" />
-                    NVD Reference
-                  </a>
-                </div>
-              )}
-            </article>
-          );
-        })}
-      </div>
+                    <div className="flex-1 min-w-0 flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-[#030303] border border-white/[0.05] flex items-center justify-center shrink-0 shadow-inner group-hover:border-rose-500/30 transition-colors">
+                        <ShieldAlert className={`w-4 h-4 ${baseScore >= 9.0 ? 'text-rose-400' : baseScore >= 7.0 ? 'text-orange-400' : 'text-emerald-400'}`} />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-black text-white group-hover:text-rose-300 transition-colors flex items-center gap-2 tracking-tight">
+                          {cveId}
+                        </h3>
+                        <p className="text-xs font-bold uppercase tracking-widest text-zinc-500 mt-1">
+                           {cvssData?.version ? `CVSS ${cvssData.version}` : 'GLOBAL SCORE'}
+                        </p>
+                      </div>
+                    </div>
 
-      {/* Pagination Controls */}
-      <div className="flex justify-center items-center gap-4 py-8">
-        <button 
-          disabled={currentPage === 1} 
-          onClick={() => setCurrentPage(p => p - 1)} 
-          className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl font-semibold text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          Previous
-        </button>
-        <div className="px-5 py-2 bg-slate-100 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-800 text-sm font-bold text-slate-700 dark:text-slate-300 shadow-inner">
-          Page {currentPage} of {totalPages}
+                    <div className="flex items-center gap-6 shrink-0">
+                      <div className="flex flex-col items-end">
+                        <div className={`px-4 py-1.5 rounded-xl font-black text-sm flex items-center gap-2 ${getScoreBadge(baseScore)}`}>
+                          <span>{baseScore.toFixed(1)}</span>
+                          <span className="text-[9px] uppercase tracking-widest opacity-80 border-l border-current pl-2">{getSeverityLabel(baseScore)}</span>
+                        </div>
+                      </div>
+                      <div className="w-8 h-8 rounded-full bg-white/[0.03] border border-white/[0.05] flex items-center justify-center text-zinc-500 group-hover:bg-white/[0.1] group-hover:text-white transition-all">
+                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </div>
+                    </div>
+                  </div>
+
+                  {isExpanded && (
+                    <div className="p-6 pt-0 animate-in slide-in-from-top-2 duration-300">
+                      <div className="p-5 bg-[#030303] rounded-2xl border border-white/[0.05] shadow-inner mb-6">
+                        <div className="flex items-center gap-2 mb-3 text-[10px] font-black uppercase tracking-widest text-rose-500/70">
+                          <FileText className="w-3.5 h-3.5" />
+                          <span>Détails Techniques</span>
+                        </div>
+                        <p className="text-sm text-zinc-400 leading-relaxed font-medium">
+                          {description}
+                        </p>
+                      </div>
+
+                      {cvssData && (
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                          <MetricCard label="Vector" value={cvssData.vectorString} />
+                          <MetricCard label="Attack Vector" value={cvssData.attackVector || cvssData.accessVector} />
+                          <MetricCard label="Complexity" value={cvssData.attackComplexity || cvssData.accessComplexity} />
+                          <MetricCard label="Privileges" value={cvssData.privilegesRequired || cvssData.authentication} />
+                        </div>
+                      )}
+
+                      {/* References Section */}
+                      {cve.references && cve.references.length > 0 && (
+                        <div className="mb-8">
+                          <div className="flex items-center gap-2 mb-4 text-[10px] font-black uppercase tracking-widest text-rose-500/70">
+                            <LinkIcon className="w-3.5 h-3.5" />
+                            <span>Références NIST & Sécurité</span>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                             {cve.references.slice(0, 6).map((ref: any, i: number) => (
+                               <a 
+                                 key={i} href={ref.url} target="_blank" rel="noopener noreferrer"
+                                 className="flex items-center justify-between p-3 bg-white/[0.02] border border-white/[0.05] rounded-xl hover:bg-white/[0.05] hover:border-rose-500/30 transition-all group/ref"
+                               >
+                                 <span className="text-[10px] font-bold text-zinc-500 group-hover/ref:text-zinc-300 truncate max-w-[90%]">{ref.url}</span>
+                                 <ExternalLink className="w-3 h-3 text-zinc-600 group-hover/ref:text-rose-400 shrink-0" />
+                               </a>
+                             ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex justify-end border-t border-white/[0.05] pt-6">
+                        <a 
+                          href={`https://nvd.nist.gov/vuln/detail/${cveId}`}
+                          target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-5 py-2.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-500/20 transition-all shadow-lg"
+                        >
+                          Consulter la source officielle <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
-        <button 
-          disabled={currentPage >= totalPages} 
-          onClick={() => setCurrentPage(p => p + 1)} 
-          className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl font-semibold text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          Next
-        </button>
       </div>
-    </main>
+    </div>
+  );
+}
+
+function MetricCard({ label, value }: { label: string, value: string }) {
+  if (!value) return null;
+  return (
+    <div className="p-4 bg-[#030303] rounded-xl border border-white/[0.05] shadow-inner">
+      <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mb-1.5">{label}</p>
+      <p className="text-xs font-bold text-zinc-300 truncate max-w-full" title={value}>{value}</p>
+    </div>
   );
 }

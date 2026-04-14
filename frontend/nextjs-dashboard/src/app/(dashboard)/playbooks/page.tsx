@@ -1,18 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  BookOpen, 
-  ShieldAlert, 
-  Clock, 
-  ChevronRight, 
-  AlertCircle,
-  Loader2,
-  Lock,
-  Zap
-} from 'lucide-react';
+import { BookOpen, ShieldAlert, Clock, ChevronRight, AlertCircle, Loader2, Lock, Zap } from 'lucide-react';
 import Link from 'next/link';
-import { ThemeToggle } from '@/components/ThemeToggle';
 
 interface Playbook {
   id: string;
@@ -36,44 +26,44 @@ export default function PlaybooksPage() {
         });
         
         if (!res.ok) throw new Error('Failed to fetch playbooks. Ensure backend is running.');
-        const data = await res.json();
-        setPlaybooks(data);
+        setPlaybooks(await res.json());
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
         setLoading(false);
       }
     };
-
     fetchPlaybooks();
   }, []);
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700">
+    <div className="space-y-8 animate-in fade-in duration-700 max-w-[1600px] mx-auto pb-10">
       
       {/* Header */}
-      <div className="flex justify-between items-start">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <div className="bg-amber-500 p-2.5 rounded-2xl shadow-lg shadow-amber-500/20">
-              <BookOpen className="text-white w-5 h-5" />
-            </div>
-            <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Response Playbooks</h1>
-          </div>
-          <p className="text-slate-500 dark:text-slate-400 font-medium ml-1">NIST-compliant Standard Operating Procedures for Cyber Incidents</p>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+        <div>
+          <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-500 tracking-tight mb-2">
+            Response <span className="text-amber-500">Playbooks</span>
+          </h1>
+          <p className="text-xs font-bold tracking-widest uppercase text-zinc-500 flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-amber-500 animate-pulse" />
+            NIST-compliant Cyber Action Plans
+          </p>
         </div>
-        <ThemeToggle />
       </div>
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <Loader2 className="w-10 h-10 text-amber-500 animate-spin" />
-          <p className="font-bold text-slate-400">Loading Playbook Library...</p>
+        <div className="flex flex-col items-center justify-center py-32 gap-6 scale-in-center">
+          <div className="relative">
+            <div className="w-24 h-24 border-2 border-amber-500/20 border-t-amber-500 rounded-full animate-spin shadow-[0_0_30px_rgba(245,158,11,0.2)]" />
+            <BookOpen className="w-8 h-8 text-amber-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+          </div>
+          <p className="font-black text-[10px] text-zinc-500 uppercase tracking-widest">Loading Strategic Directives...</p>
         </div>
       ) : error ? (
-        <div className="p-8 bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/30 rounded-[2rem] flex items-center gap-4 text-rose-600">
-           <AlertCircle className="w-8 h-8" />
-           <p className="font-bold">{error}</p>
+        <div className="p-8 bg-rose-500/10 border border-rose-500/30 rounded-3xl flex items-center gap-4 text-rose-400 shadow-[0_0_30px_rgba(244,63,94,0.1)]">
+           <AlertCircle className="w-6 h-6" />
+           <p className="font-bold text-sm tracking-wide">{error}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -81,65 +71,67 @@ export default function PlaybooksPage() {
             <Link 
               key={pb.id} 
               href={`/playbooks/${pb.id}`}
-              className="group bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 flex flex-col justify-between"
+              className="group relative bg-[#0a0a0a]/50 backdrop-blur-xl p-8 rounded-3xl border border-white/[0.05] shadow-2xl hover:bg-[#0f0f0f]/80 hover:border-white/[0.1] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between overflow-hidden"
             >
-              <div>
-                <div className="flex items-start justify-between mb-6">
-                  <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-[50px] pointer-events-none group-hover:bg-amber-500/10 transition-colors" />
+
+              <div className="relative z-10">
+                <div className="flex items-start justify-between mb-8">
+                  <div className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border flex items-center shadow-lg ${
                     pb.category === 'Critical' 
-                      ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' 
+                      ? 'bg-rose-500/10 text-rose-400 border-rose-500/30 shadow-rose-500/10' 
                       : pb.category === 'High' 
-                      ? 'bg-orange-500/10 text-orange-500 border-orange-500/20'
-                      : 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20'
+                      ? 'bg-orange-500/10 text-orange-400 border-orange-500/30 shadow-orange-500/10'
+                      : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30 shadow-indigo-500/10'
                   }`}>
                     {pb.category} Priority
                   </div>
-                  <Zap className="w-5 h-5 text-slate-200 dark:text-slate-800 group-hover:text-amber-500 transition-colors" />
+                  <Zap className="w-5 h-5 text-zinc-600 group-hover:text-amber-400 transition-colors" />
                 </div>
                 
-                <h3 className="text-xl font-black text-slate-900 dark:text-white mb-3 group-hover:text-blue-500 transition-colors">
+                <h3 className="text-xl font-black text-white mb-3 group-hover:text-amber-300 transition-colors leading-tight">
                   {pb.title}
                 </h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed line-clamp-3">
+                <p className="text-xs text-zinc-400 font-medium leading-relaxed line-clamp-3">
                   {pb.description}
                 </p>
               </div>
 
-              <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-slate-400">
-                  <Clock className="w-4 h-4" />
-                  <span className="text-xs font-bold">{pb.duration} est.</span>
+              <div className="mt-8 pt-6 border-t border-white/[0.05] flex items-center justify-between relative z-10">
+                <div className="flex items-center gap-2 text-zinc-500">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">{pb.duration} est.</span>
                 </div>
-                <div className="flex items-center gap-1 text-blue-600 font-black text-xs uppercase tracking-widest">
+                <div className="flex items-center gap-1.5 text-zinc-400 group-hover:text-white group-hover:bg-amber-600/20 px-3 py-1.5 rounded-lg border border-transparent group-hover:border-amber-500/30 font-black text-[10px] uppercase tracking-widest transition-all">
                   Execute
-                  <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>
             </Link>
           ))}
 
           {/* Locked/Soon Card */}
-          <div className="bg-slate-50 dark:bg-slate-900/40 p-8 rounded-[2.5rem] border-2 border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center text-center space-y-4 opacity-70">
-             <div className="p-4 bg-white dark:bg-slate-800 rounded-full shadow-inner">
-                <Lock className="w-6 h-6 text-slate-400" />
+          <div className="bg-[#030303]/50 p-8 rounded-3xl border border-dashed border-white/[0.1] flex flex-col items-center justify-center text-center space-y-5 opacity-60 hover:opacity-100 transition-opacity">
+             <div className="p-4 bg-[#0a0a0a] border border-white/[0.05] rounded-2xl shadow-inner">
+                <Lock className="w-6 h-6 text-zinc-500" />
              </div>
              <div>
-                <h4 className="font-black text-slate-500">More Playbooks</h4>
-                <p className="text-xs font-medium text-slate-400">Update AI Core to unlock</p>
+                <h4 className="font-black text-zinc-300 uppercase tracking-widest text-sm mb-1">More Playbooks</h4>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Update Core AI to unlock</p>
              </div>
           </div>
         </div>
       )}
 
       {/* Footer Info */}
-      <div className="mt-12 p-6 bg-slate-900/5 dark:bg-white/5 rounded-3xl border border-slate-200/50 dark:border-white/5">
-        <div className="flex items-center gap-3 mb-2">
-           <ShieldAlert className="w-4 h-4 text-slate-400" />
-           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Regulatory Notice</span>
+      <div className="mt-12 p-6 bg-white/[0.02] rounded-3xl border border-white/[0.05] flex items-start gap-4">
+        <ShieldAlert className="w-5 h-5 text-zinc-500 mt-1 shrink-0" />
+        <div>
+          <p className="text-[10px] font-black text-amber-500/70 uppercase tracking-widest mb-1.5">Regulatory Notice</p>
+          <p className="text-[10px] uppercase text-zinc-500 font-black tracking-widest leading-relaxed">
+            Ces procédures opérationnelles sont conformes au NIST SP 800-61 Rev. 2. Conformez-vous toujours à la politique interne de l'entreprise avant toute action d'isolation réseau.
+          </p>
         </div>
-        <p className="text-xs text-slate-500 font-medium leading-relaxed">
-          Ces procédures sont conformes aux recommandations NIST SP 800-61 Rev. 2. En situation réelle, assurez-vous de suivre la chaîne de commandement de votre organisation avant toute action de confinement majeure.
-        </p>
       </div>
 
     </div>

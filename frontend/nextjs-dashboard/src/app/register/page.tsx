@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ShieldPlus, Lock, User, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import Link from 'next/link';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -35,7 +36,7 @@ export default function RegisterPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.detail || 'Erreur lors de l\'inscription.');
+        setError(data.detail || "Erreur lors de l'inscription.");
         return;
       }
 
@@ -44,83 +45,108 @@ export default function RegisterPage() {
         router.push('/login');
       }, 2000);
     } catch {
-      setError('Impossible de se connecter au service d\'authentification.');
+      setError("Impossible de se connecter au service d'authentification.");
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md bg-slate-900/90 border border-slate-800 rounded-3xl shadow-2xl backdrop-blur-xl p-8">
+    <div className="min-h-screen bg-[#030303] text-zinc-50 flex items-center justify-center p-4 relative overflow-hidden font-sans">
+      
+      {/* BACKGROUND EFFECTS */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
+        <div className="absolute top-[20%] right-[20%] w-[40%] h-[40%] rounded-full bg-emerald-600/15 blur-[150px] animate-pulse mix-blend-screen" style={{ animationDuration: '10s' }} />
+      </div>
+
+      <div className="w-full max-w-[400px] relative z-10">
         
-        <button 
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6 text-sm font-bold"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Retour
-        </button>
-
-        <div className="text-center mb-6">
-          <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white mb-3 shadow-lg">
-            <ShieldPlus className="w-6 h-6" />
+        {/* BACK BUTTON */}
+        <Link href="/login" className="inline-flex items-center gap-2 text-zinc-500 hover:text-white transition-colors mb-6 text-xs font-bold tracking-widest uppercase group">
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Retour à la connexion
+        </Link>
+        
+        {/* REGISTER CARD */}
+        <div className="bg-[#0a0a0a]/80 backdrop-blur-2xl border border-white/[0.08] shadow-[0_8px_32px_0_rgba(0,0,0,0.36),inset_0_1px_0_0_rgba(255,255,255,0.05)] rounded-[32px] p-8 md:p-10 relative overflow-hidden group">
+          
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent rounded-t-[32px]" />
+          
+          <div className="text-center mb-8">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-center mb-6 shadow-[0_0_30px_-5px_rgba(16,185,129,0.3)]">
+              <ShieldPlus className="w-7 h-7 text-emerald-400" />
+            </div>
+            <h1 className="text-3xl font-black tracking-tight text-white mb-2">Inscription</h1>
+            <p className="text-sm font-medium text-zinc-500">Créez votre compte CyberAI personnel.</p>
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Inscription</h1>
-          <p className="mt-2 text-slate-300">Créez votre compte CyberAI personnel.</p>
+
+          {success ? (
+            <div className="bg-emerald-500/10 border border-emerald-500/20 p-8 rounded-2xl text-center space-y-4 animate-in fade-in zoom-in duration-300">
+               <CheckCircle2 className="w-16 h-16 text-emerald-400 mx-auto" />
+               <h3 className="text-xl font-black text-emerald-300">Compte déployé !</h3>
+               <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">Redirection sécurisée...</p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="block text-zinc-400 text-[10px] uppercase tracking-widest font-bold ml-1">Nom d'utilisateur</label>
+                <div className="flex items-center gap-3 bg-[#030303] border border-white/[0.05] rounded-xl px-4 py-3.5 transition-all focus-within:border-emerald-500/50 focus-within:bg-white/[0.02]">
+                  <User className="w-4 h-4 text-emerald-500/70" />
+                  <input
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Votre pseudo"
+                    className="w-full bg-transparent outline-none text-sm text-zinc-100 placeholder:text-zinc-600 font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-zinc-400 text-[10px] uppercase tracking-widest font-bold ml-1">Mot de passe</label>
+                <div className="flex items-center gap-3 bg-[#030303] border border-white/[0.05] rounded-xl px-4 py-3.5 transition-all focus-within:border-emerald-500/50 focus-within:bg-white/[0.02]">
+                  <Lock className="w-4 h-4 text-emerald-500/70" />
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full bg-transparent outline-none text-sm text-zinc-100 placeholder:text-zinc-600 font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-zinc-400 text-[10px] uppercase tracking-widest font-bold ml-1">Confirmer mot de passe</label>
+                <div className="flex items-center gap-3 bg-[#030303] border border-white/[0.05] rounded-xl px-4 py-3.5 transition-all focus-within:border-emerald-500/50 focus-within:bg-white/[0.02]">
+                  <Lock className="w-4 h-4 text-emerald-500/70" />
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                     placeholder="••••••••"
+                    className="w-full bg-transparent outline-none text-sm text-zinc-100 placeholder:text-zinc-600 font-medium"
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <div className="flex items-center gap-2 text-rose-400 bg-rose-500/10 border border-rose-500/20 px-4 py-3 rounded-xl text-xs font-bold">
+                  <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="w-full relative group/btn inline-flex h-12 items-center justify-center overflow-hidden rounded-xl bg-emerald-600 px-6 font-medium text-white transition-all hover:scale-[1.02] hover:shadow-[0_0_40px_-10px_rgba(16,185,129,0.8)] mt-6"
+              >
+                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:animate-[shimmer_1.5s_infinite]" />
+                <span className="relative flex items-center justify-center gap-2 text-xs font-black tracking-widest uppercase flex-1">
+                  Créer mon compte
+                </span>
+              </button>
+            </form>
+          )}
+
         </div>
-
-        {success ? (
-          <div className="bg-emerald-500/10 border border-emerald-500/20 p-6 rounded-2xl text-center space-y-4">
-             <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
-             <h3 className="text-xl font-bold text-emerald-400">Compte créé !</h3>
-             <p className="text-sm text-slate-300">Redirection vers la page de connexion...</p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <label className="block text-slate-300 text-xs uppercase tracking-wide font-semibold">Nom utilisateur</label>
-            <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm">
-              <User className="w-4 h-4 text-slate-300" />
-              <input
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Votre pseudo"
-                className="w-full bg-transparent outline-none text-slate-100 placeholder:text-slate-400"
-              />
-            </div>
-
-            <label className="block text-slate-300 text-xs uppercase tracking-wide font-semibold">Mot de passe</label>
-            <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm">
-              <Lock className="w-4 h-4 text-slate-300" />
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="******"
-                className="w-full bg-transparent outline-none text-slate-100 placeholder:text-slate-400"
-              />
-            </div>
-
-            <label className="block text-slate-300 text-xs uppercase tracking-wide font-semibold">Confirmer le mot de passe</label>
-            <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm">
-              <Lock className="w-4 h-4 text-slate-300" />
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="******"
-                className="w-full bg-transparent outline-none text-slate-100 placeholder:text-slate-400"
-              />
-            </div>
-
-            {error && <p className="text-rose-400 text-sm font-medium">{error}</p>}
-
-            <button
-              type="submit"
-              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 hover:scale-[1.01] transition mt-2"
-            >
-              Créer mon compte
-            </button>
-          </form>
-        )}
       </div>
     </div>
   );

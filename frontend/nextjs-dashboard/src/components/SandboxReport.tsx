@@ -1,29 +1,11 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { 
-  ShieldCheck, 
-  ShieldAlert, 
-  Terminal, 
-  Search, 
-  Database, 
-  Network,
-  Clock,
-  ExternalLink,
-  ChevronRight,
-  Fingerprint,
-  Loader2,
-  CheckCircle2
-} from 'lucide-react';
-
+import { ShieldCheck, ShieldAlert, Terminal, Search, Database, Network, Clock, ExternalLink, ChevronRight, Fingerprint, Loader2, CheckCircle2 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
-interface SandboxReportProps {
-  data: any;
-}
-
-export default function SandboxReport({ data }: SandboxReportProps) {
+export default function SandboxReport({ data }: { data: any }) {
   const reportRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -32,90 +14,36 @@ export default function SandboxReport({ data }: SandboxReportProps) {
   if (!data) return null;
 
   const handleExportPDF = async () => {
-    const reportElement = reportRef.current;
-    if (!reportElement) return;
-    
+    if (!reportRef.current) return;
     setIsExporting(true);
-    const pdfModeClassName = 'pdf-mode';
-    
+    reportRef.current.classList.add('pdf-mode');
     try {
-      // Force plain colors/styles for html2canvas compatibility
-      reportElement.classList.add(pdfModeClassName);
-      
-      // Wait for the DOM to update styles
-      await new Promise<void>((resolve) => {
-        requestAnimationFrame(() => resolve());
-      });
-
-      const canvas = await html2canvas(reportElement, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff', // Use white background for PDF
-        logging: false
-      });
-      
-      const imgData = canvas.toDataURL('image/png');
+      await new Promise(r => requestAnimationFrame(r));
+      const canvas = await html2canvas(reportRef.current, { scale: 2, useCORS: true, backgroundColor: '#030303' });
       const pdf = new jsPDF('p', 'mm', 'a4');
-      
-      const imgWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      // Add the first page
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      // Add subsequent pages if the content is longer than one A4
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pdfWidth, Math.min(imgHeight, pdf.internal.pageSize.getHeight()));
       pdf.save(`Forensic_Report_${data.verdict || 'Analysis'}_${Date.now()}.pdf`);
-    } catch (err) {
-      console.error("PDF Export failed", err);
-      alert("Erreur lors de l'exportation PDF. Veuillez réessayer.");
     } finally {
-      if (reportElement) reportElement.classList.remove(pdfModeClassName);
+      if (reportRef.current) reportRef.current.classList.remove('pdf-mode');
       setIsExporting(false);
     }
   };
 
   const handleAddToIncident = async () => {
-    setIsSaving(true);
-    setSavedSuccess(false);
-
-    const incidentData = {
-      id: `INC-${Math.floor(Math.random() * 90000) + 10000}`,
-      type: data.type || "Unknown Analysis",
-      verdict: data.verdict,
-      risk_score: data.risk_score,
-      timestamp: new Date().toISOString(),
-      details: data
-    };
-
+    setIsSaving(true); setSavedSuccess(false);
+    const incidentData = { id: `INC-${Math.floor(Math.random() * 90000) + 10000}`, type: data.type || "Unknown Analysis", verdict: data.verdict, risk_score: data.risk_score, timestamp: new Date().toISOString(), details: data };
     try {
       const token = window.localStorage.getItem('token');
       const res = await fetch('http://127.0.0.1:8000/incidents', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify(incidentData)
       });
-
-      if (res.ok) {
-        setSavedSuccess(true);
-        setTimeout(() => setSavedSuccess(false), 3000);
-      } else {
-        throw new Error("API Failure");
-      }
-    } catch (err) {
+      if (!res.ok) throw new Error("API Failure");
+      setSavedSuccess(true); setTimeout(() => setSavedSuccess(false), 3000);
+    } catch {
       alert("Erreur lors de l'enregistrement de l'incident.");
     } finally {
       setIsSaving(false);
@@ -126,67 +54,61 @@ export default function SandboxReport({ data }: SandboxReportProps) {
 
   return (
     <div className="space-y-6">
-      
       <div ref={reportRef} id="report-content" className="animate-in fade-in slide-in-from-bottom-5 duration-700 p-1">
+        
         {/* Summary Header */}
-        <div className={`p-8 rounded-[2.5rem] border ${
-          isMalicious 
-            ? 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900/30' 
-            : 'bg-emerald-50/50 dark:bg-emerald-950/10 border-emerald-100 dark:border-emerald-900/30'
-        } mb-8 flex flex-col md:flex-row gap-8 items-center justify-between`}>
+        <div className={`p-8 rounded-3xl border ${
+          isMalicious ? 'bg-rose-500/10 border-rose-500/30' : 'bg-emerald-500/10 border-emerald-500/30'
+        } mb-8 flex flex-col md:flex-row gap-8 items-center justify-between relative overflow-hidden backdrop-blur-md`}>
+          <div className={`absolute top-0 right-0 w-32 h-32 blur-[60px] pointer-events-none ${isMalicious ? 'bg-rose-500/20' : 'bg-emerald-500/20'}`} />
           
-          <div className="flex items-center gap-6">
-            <div className={`w-20 h-20 rounded-3xl flex items-center justify-center shadow-2xl ${
-              isMalicious ? 'bg-rose-600 text-white shadow-rose-500/30' : 'bg-emerald-600 text-white shadow-emerald-500/30'
+          <div className="flex items-center gap-6 relative z-10">
+            <div className={`w-20 h-20 rounded-2xl flex items-center justify-center border shadow-xl ${
+              isMalicious ? 'bg-rose-500/20 text-rose-400 border-rose-500/50 shadow-[0_0_30px_rgba(244,63,94,0.4)]' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.4)]'
             }`}>
               {isMalicious ? <ShieldAlert className="w-10 h-10" /> : <ShieldCheck className="w-10 h-10" />}
             </div>
             <div>
-              <div className="flex items-center gap-3 mb-1">
-                 <h2 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">{data.verdict}</h2>
-                 <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                   isMalicious ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'
+              <div className="flex items-center gap-3 mb-2">
+                 <h2 className="text-2xl font-black text-white uppercase tracking-tighter">{data.verdict}</h2>
+                 <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest ${
+                   isMalicious ? 'bg-rose-500/20 text-rose-400 border border-rose-500/50' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50'
                  }`}>
                    Risk Score: {data.risk_score}/100
                  </span>
               </div>
-              <p className="text-slate-500 dark:text-slate-400 font-medium">{data.recommendation}</p>
+              <p className="text-zinc-400 text-xs font-medium max-w-xl leading-relaxed">{data.recommendation}</p>
             </div>
           </div>
 
-          <div className="flex gap-4 text-slate-900 dark:text-white">
+          <div className="flex gap-6 text-white relative z-10 bg-[#030303] p-4 rounded-2xl border border-white/[0.05] shadow-inner">
              <div className="text-right">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Analysis Type</p>
-                <p className="font-bold">{data.type}</p>
+                <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Analysis Type</p>
+                <p className="font-bold text-xs">{data.type}</p>
              </div>
-             <div className="w-px h-10 bg-slate-200 dark:bg-slate-800" />
+             <div className="w-px h-8 bg-white/[0.1] self-center" />
              <div className="text-right">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Analyzed At</p>
-                <p className="font-bold">
-                  {new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                </p>
+                <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Analyzed At</p>
+                <p className="font-bold text-xs">{new Date(data.timestamp).toLocaleTimeString()}</p>
              </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          <div className="lg:col-span-2 space-y-8">
-            
-            <section className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-slate-800 overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+        {/* Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <section className="bg-[#030303] rounded-3xl border border-white/[0.05] overflow-hidden shadow-inner">
+              <div className="px-6 py-5 border-b border-white/[0.05] flex items-center gap-3 bg-white/[0.02]">
                  <Search className="w-4 h-4 text-indigo-500" />
-                 <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">Security Indicators</h3>
+                 <h3 className="text-[10px] font-black text-white uppercase tracking-widest">Security Indicators</h3>
               </div>
-              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+              <div className="divide-y divide-white/[0.03]">
                 {data.indicators?.map((indicator: any, idx: number) => (
-                  <div key={idx} className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                  <div key={idx} className="p-5 flex items-center justify-between hover:bg-white/[0.02] transition-colors">
                     <div className="flex items-center gap-4">
-                      <div className={`w-2 h-2 rounded-full ${
-                        indicator.risk === 'Critical' ? 'bg-rose-500' : indicator.risk === 'High' ? 'bg-orange-500' : 'bg-blue-500'
-                      }`} />
-                      <span className="text-xs font-black text-slate-400 uppercase w-20">{indicator.type}</span>
-                      <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{indicator.detail}</span>
+                      <div className={`w-2 h-2 rounded-full ${indicator.risk === 'Critical' ? 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.8)]' : indicator.risk === 'High' ? 'bg-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.8)]' : 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]'}`} />
+                      <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest w-20">{indicator.type}</span>
+                      <span className="text-xs font-bold text-zinc-300">{indicator.detail}</span>
                     </div>
                   </div>
                 ))}
@@ -194,17 +116,17 @@ export default function SandboxReport({ data }: SandboxReportProps) {
             </section>
 
             {data.behavior_logs && (
-              <section className="bg-slate-950 rounded-[2.5rem] border border-slate-800 overflow-hidden shadow-2xl">
-                <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+              <section className="bg-black rounded-3xl border border-white/[0.08] overflow-hidden shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+                <div className="px-6 py-4 border-b border-white/[0.05] flex items-center justify-between bg-white/[0.02]">
+                   <div className="flex items-center gap-3">
                       <Terminal className="w-4 h-4 text-emerald-500" />
-                      <h3 className="text-xs font-black text-white uppercase tracking-widest">Sandboxing Detonation Logs</h3>
-                  </div>
+                      <h3 className="text-[10px] font-black text-white uppercase tracking-widest">Sandbox Detonation Logs</h3>
+                   </div>
                 </div>
-                <div className="p-6 font-mono text-[11px] leading-relaxed overflow-y-auto max-h-[300px]">
+                <div className="p-6 font-mono text-[10px] leading-relaxed overflow-y-auto max-h-[300px] custom-scrollbar">
                   {data.behavior_logs.map((log: string, idx: number) => (
-                    <div key={idx} className={`flex gap-3 mb-1 ${log.includes('[THREAT]') ? 'text-rose-400 font-bold' : 'text-emerald-500/80'}`}>
-                      <span className="opacity-30 select-none">[{idx.toString().padStart(3, '0')}]</span>
+                    <div key={idx} className={`flex gap-4 mb-2 ${log.includes('[THREAT]') ? 'text-rose-400 font-bold' : 'text-emerald-500/90'}`}>
+                      <span className="opacity-40 text-zinc-500 select-none">[{idx.toString().padStart(3, '0')}]</span>
                       <span>{log}</span>
                     </div>
                   ))}
@@ -213,18 +135,19 @@ export default function SandboxReport({ data }: SandboxReportProps) {
             )}
           </div>
 
-          <div className="space-y-8">
+          <div className="space-y-6">
             {data.mitre_attack && (
-              <section className="bg-indigo-600 rounded-[2.5rem] p-6 text-white shadow-xl shadow-indigo-500/20">
-                <div className="flex items-center gap-3 mb-6">
-                  <Database className="w-5 h-5 text-indigo-200" />
-                  <h3 className="text-sm font-black uppercase tracking-widest">MITRE ATT&CK® Mapping</h3>
+              <section className="bg-indigo-600/10 rounded-3xl p-6 border border-indigo-500/30 shadow-[0_0_30px_rgba(79,70,229,0.1)] relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/20 blur-[50px] pointer-events-none" />
+                <div className="flex items-center gap-3 mb-6 relative z-10">
+                  <Database className="w-4 h-4 text-indigo-400" />
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-300">ATT&CK® Mapping</h3>
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-3 relative z-10">
                   {data.mitre_attack.map((tech: any) => (
-                    <div key={tech.id} className="bg-white/10 p-4 rounded-2xl border border-white/5">
-                      <p className="text-[10px] font-black text-indigo-200 uppercase tracking-widest">{tech.id}</p>
-                      <p className="font-bold text-sm">{tech.name}</p>
+                    <div key={tech.id} className="bg-[#030303] p-4 rounded-xl border border-indigo-500/20 shadow-inner">
+                      <p className="text-[9px] font-black text-indigo-500/70 uppercase tracking-widest mb-1">{tech.id}</p>
+                      <p className="font-bold text-xs text-indigo-100">{tech.name}</p>
                     </div>
                   ))}
                 </div>
@@ -234,32 +157,30 @@ export default function SandboxReport({ data }: SandboxReportProps) {
         </div>
       </div>
 
-      {/* Action Buttons Container (Outside Ref) */}
-      <section className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 p-8 flex flex-col md:flex-row gap-4 items-center justify-between">
-         <div className="flex items-center gap-4">
-            <div className="bg-indigo-50 dark:bg-indigo-900/30 p-4 rounded-2xl">
-               <Fingerprint className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+      {/* Action Buttons Container */}
+      <section className="bg-[#0a0a0a] rounded-3xl border border-white/[0.05] p-8 flex flex-col md:flex-row gap-6 items-center justify-between shadow-lg">
+         <div className="flex items-center gap-5">
+            <div className="bg-white/[0.03] border border-white/[0.05] p-4 rounded-2xl">
+               <Fingerprint className="w-6 h-6 text-zinc-400" />
             </div>
             <div>
-               <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tighter">Forensic Post-Actions</h3>
-               <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Execute compliance and archival workflows</p>
+               <h3 className="text-sm font-black text-white uppercase tracking-widest">Forensic Post-Actions</h3>
+               <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-1">Execute compliance and archival workflows</p>
             </div>
          </div>
          
          <div className="flex flex-wrap gap-4">
             <button 
-              onClick={handleExportPDF}
-              disabled={isExporting}
-              className="flex items-center gap-3 px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-950 font-black rounded-2xl text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+              onClick={handleExportPDF} disabled={isExporting}
+              className="flex items-center gap-3 px-6 py-4 bg-white/[0.03] border border-white/[0.1] text-white font-black rounded-xl text-[10px] uppercase tracking-widest hover:bg-white/[0.08] active:scale-95 transition-all disabled:opacity-50"
             >
-               {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
-               {isExporting ? "Exporting..." : "Generate PDF Export"}
+               {isExporting ? <Loader2 className="w-4 h-4 animate-spin text-indigo-400" /> : <ExternalLink className="w-4 h-4 text-indigo-400" />}
+               {isExporting ? "Exporting..." : "Generate PDF"}
             </button>
             <button 
-              onClick={handleAddToIncident}
-              disabled={isSaving || savedSuccess}
-              className={`flex items-center gap-3 px-8 py-4 font-black rounded-2xl text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all disabled:opacity-70 ${
-                savedSuccess ? 'bg-emerald-500 text-white' : 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/20'
+              onClick={handleAddToIncident} disabled={isSaving || savedSuccess}
+              className={`flex items-center gap-3 px-8 py-4 font-black rounded-xl text-[10px] uppercase tracking-widest active:scale-95 transition-all disabled:opacity-70 disabled:shadow-none ${
+                savedSuccess ? 'bg-emerald-600 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)]' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_20px_rgba(79,70,229,0.4)]'
               }`}
             >
                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : savedSuccess ? <CheckCircle2 className="w-4 h-4" /> : <Database className="w-4 h-4" />}
@@ -267,7 +188,6 @@ export default function SandboxReport({ data }: SandboxReportProps) {
             </button>
          </div>
       </section>
-
     </div>
   );
 }
