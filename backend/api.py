@@ -9,6 +9,7 @@ if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 from fastapi import Depends, FastAPI, HTTPException, status, File, UploadFile
+from fastapi.responses import StreamingResponse
 import hashlib
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -295,6 +296,87 @@ async def analyze_url(body: ParseRequest, current_user: dict = Depends(get_curre
     event["local_id"] = db_event.id # Inject ID for frontend deletion
     
     return {"status": "success", "event": event}
+
+
+@app.get("/analyze-url-stream")
+async def analyze_url_stream(
+    url: str,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    SSE endpoint: streams real-time progress while running the full
+    iocextract → Scraping → Pre-process → LLM → Post-validate pipeline.
+    Frontend consumes this with fetch() + ReadableStream (supports JWT header).
+    """
+    async def event_generator():
+        def emit(step: str, progress: int, **kwargs) -> str:
+            return f"data: {json.dumps({'step': step, 'progress': progress, **kwargs})}\n\n"
+
+        try:
+            # --- Phase 1: Scraping ---
+            yield emit("🔍 Scraping target URL via StealthyFetcher...", 10)
+            text = await parse_engine.scrape_url(url)
+
+            if isinstance(text, str) and text.startswith("Error:"):
+                yield f"data: {json.dumps({'error': text, 'progress': 0})}\n\n"
+                return
+
+            # --- Phase 2: Pre-processing (iocextract) ---
+            yield emit("🧬 Pre-processing with iocextract (refanging IOCs)...", 30)
+            refanged_text, initial_iocs = await asyncio.to_thread(
+                parse_engine.pre_process, text
+            )
+
+            ioc_count = sum(len(v) for v in initial_iocs.values())
+            yield emit(
+                f"🔎 Found {ioc_count} raw IOC candidates via iocextract — seeding AI prompt...",
+                45,
+                ioc_preview=initial_iocs
+            )
+
+            # --- Phase 3: LLM Analysis ---
+            yield emit("🤖 Running LLM (qwen2.5-coder:3b) — this takes 30-90s...", 60)
+            event = await parse_engine.generate_cti_event(refanged_text, url, initial_iocs)
+
+            if "error" in event:
+                yield f"data: {json.dumps({'error': event['error'], 'progress': 0})}\n\n"
+                return
+
+            # --- Phase 4: Post-validation (whitelist filter) ---
+            attr_count = len(event.get("attributes", []))
+            yield emit(
+                f"✅ Whitelist filter applied — {attr_count} validated IOC attribute(s) retained.",
+                85
+            )
+
+            # --- Phase 5: Database storage ---
+            yield emit("💾 Saving CTI event to database...", 92)
+            db_event = CTIEvent(
+                url=url,
+                content=json.dumps(event),
+                owner_id=current_user["id"]
+            )
+            db.add(db_event)
+            db.commit()
+            db.refresh(db_event)
+            event["local_id"] = db_event.id
+
+            # --- Done ---
+            yield f"data: {json.dumps({'done': True, 'event': event, 'progress': 100})}\n\n"
+
+        except Exception as exc:
+            yield f"data: {json.dumps({'error': str(exc), 'progress': 0})}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
     
 
 @app.post("/analyze-malware")

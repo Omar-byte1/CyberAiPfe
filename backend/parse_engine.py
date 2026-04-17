@@ -6,6 +6,19 @@ from bs4 import BeautifulSoup
 import requests
 from scrapling.fetchers import StealthyFetcher, StealthySession, AsyncStealthySession
 from langchain_ollama import OllamaLLM
+import iocextract
+
+# ---------------------------------------------------------------------------
+# IOC Whitelist — Benign domains that must NEVER be stored as threat indicators
+# ---------------------------------------------------------------------------
+WHITELIST: set[str] = {
+    "google.com", "t.co", "twitter.com", "facebook.com", "youtube.com",
+    "linkedin.com", "cybernews.com", "bleepingcomputer.com", "reddit.com",
+    "wikipedia.org", "microsoft.com", "apple.com", "amazon.com", "github.com",
+    "cloudflare.com", "w3.org", "mozilla.org", "nytimes.com", "cnn.com",
+    "bbc.com", "forbes.com", "wired.com", "theregister.com", "arstechnica.com",
+    "vice.com", "medium.com", "substack.com", "techcrunch.com",
+}
 
 class ParseEngine:
     def __init__(self):
@@ -30,6 +43,61 @@ class ParseEngine:
             num_predict=4096,
             format="json",
         )
+
+    # ------------------------------------------------------------------ #
+    #  iocextract Pipeline — Phase 2 (Pre) & Phase 4 (Post)            #
+    # ------------------------------------------------------------------ #
+
+    def _refang_text(self, text: str) -> str:
+        """
+        Undo common defanging transforms so the LLM reads real IOCs.
+        Handles: hxxp→http, [.]→., (.)→., [://]→://, [at]→@
+        """
+        text = re.sub(r'hxxp(s?)', r'http\1', text, flags=re.IGNORECASE)
+        text = re.sub(r'\[\.\]|\(\.\)', '.', text)
+        text = re.sub(r'\[://\]|\(://\)', '://', text)
+        text = re.sub(r'\[at\]|\(at\)', '@', text, flags=re.IGNORECASE)
+        return text
+
+    def pre_process(self, raw_text: str) -> tuple:
+        """
+        Phase 2 — Pre-processing (iocextract):
+        - Refangs defanged IOCs so the LLM interprets them correctly
+        - Extracts initial IOC seeds to guide the AI prompt
+        Returns: (refanged_text: str, initial_iocs: dict)
+        """
+        refanged = self._refang_text(raw_text)
+        try:
+            ips     = list(set(str(ip) for ip in iocextract.extract_ipv4s(raw_text, refang=True)))[:20]
+            urls    = list(set(str(u)  for u  in iocextract.extract_urls(raw_text,  refang=True)))[:15]
+            emails  = list(set(str(e)  for e  in iocextract.extract_emails(raw_text, refang=True)))[:10]
+            hashes  = list(set(str(h)  for h  in iocextract.extract_hashes(raw_text)))[:10]
+        except Exception:
+            ips, urls, emails, hashes = [], [], [], []
+        initial_iocs = {"ips": ips, "urls": urls, "emails": emails, "hashes": hashes}
+        return refanged, initial_iocs
+
+    def post_validate(self, attributes: list) -> list:
+        """
+        Phase 4 — Post-processing (iocextract validation):
+        - Drops IOCs whose value contains any whitelisted domain
+        - Deduplicates by value
+        Returns: cleaned, validated attribute list
+        """
+        if not attributes:
+            return []
+        seen: set[str] = set()
+        cleaned = []
+        for attr in attributes:
+            value = str(attr.get("value", "")).strip()
+            if not value or value in seen:
+                continue
+            # Whitelist guard
+            if any(w in value.lower() for w in WHITELIST):
+                continue
+            seen.add(value)
+            cleaned.append(attr)
+        return cleaned
 
     def clean_for_ai(self, html_content: str) -> str:
         """
@@ -189,7 +257,7 @@ class ParseEngine:
             print(f"❌ Erreur critique sur {url} : {str(e)}")
             return f"Error: Scraping exception - {str(e)}"
 
-    async def generate_cti_event(self, text: str, url: str) -> dict:
+    async def generate_cti_event(self, text: str, url: str, initial_iocs: dict = None) -> dict:
         """
         Analyzes content using the Master Parser prompt for JSON CTI extraction (ASYNC).
         """
@@ -197,9 +265,20 @@ class ParseEngine:
             return {"error": text}
             
         # 1. Clean input to avoid saturating context
-        input_text = text[:8000] 
+        input_text = text[:8000]
 
-        # 2. Master Parser Prompt (Optimized)
+        # 2. iocextract seed hint (Phase 2 hand-off to LLM)
+        ioc_hint = ""
+        if initial_iocs and any(initial_iocs.values()):
+            ioc_hint = f"""
+PRE-DETECTED IOCs (extracted by iocextract — use as a cross-reference for attributes):
+  IPs     : {initial_iocs.get('ips', [])}
+  URLs    : {initial_iocs.get('urls', [])}
+  Emails  : {initial_iocs.get('emails', [])}
+  Hashes  : {initial_iocs.get('hashes', [])}
+"""
+
+        # 3. Master Parser Prompt (Optimized)
         prompt = f"""
         Tu es un expert en Cyber Threat Intelligence (CTI). Ta mission est d'extraire des données de sécurité d'un texte brut et de les transformer en un objet JSON unique.
         
@@ -210,7 +289,7 @@ class ParseEngine:
         4. Output strictly valid JSON components.
 
         Tâche : Analyse le contenu suivant et convertis-le selon le schéma fourni.
-        
+        {ioc_hint}
         Article Content:
         {input_text}
 
@@ -276,6 +355,8 @@ class ParseEngine:
             })
             
             if "attributes" in event_data:
+                # Phase 4: Post-validate — whitelist filter + deduplication
+                event_data["attributes"] = self.post_validate(event_data["attributes"])
                 for attr in event_data["attributes"]:
                     attr.update({
                         "uuid": str(uuid.uuid4()),
