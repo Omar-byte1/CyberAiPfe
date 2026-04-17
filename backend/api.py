@@ -469,8 +469,126 @@ def chat_with_assistant(body: ChatRequest, _: dict[str, str] = Depends(get_curre
     response = chat_engine.chat(body.message)
     return {"status": "success", "response": response}
 
+# ============================================================
+#  AI SANDBOX — Live Phishing Detonation Engine
+# ============================================================
+import iocextract as _ioc
+import httpx as _httpx
+import time as _time
+
+# 15-minute in-memory cache for the OpenPhish feed
+_feed_cache: dict = {"urls": [], "fetched_at": 0.0}
+FEED_TTL = 900  # 15 minutes in seconds
+
+
+@app.get("/sandbox/live-feed")
+async def get_sandbox_live_feed(current_user: dict = Depends(get_current_user)):
+    """Returns latest phishing URLs from OpenPhish (cached 15 min)."""
+    now = _time.time()
+    if now - _feed_cache["fetched_at"] < FEED_TTL and _feed_cache["urls"]:
+        return {"status": "cache", "urls": _feed_cache["urls"]}
+
+    try:
+        async with _httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.get(
+                "https://raw.githubusercontent.com/openphish/public_feed/refs/heads/main/feed.txt",
+                follow_redirects=True
+            )
+            resp.raise_for_status()
+
+        # iocextract validates + refangs URLs from the raw feed
+        all_urls = list(_ioc.extract_urls(resp.text, refang=True))
+        # Dedupe and take 20 most recent (last lines in feed)
+        unique_urls = list(dict.fromkeys(reversed(all_urls)))[:20]
+
+        _feed_cache["urls"] = unique_urls
+        _feed_cache["fetched_at"] = now
+        return {"status": "live", "urls": unique_urls}
+
+    except Exception as e:
+        if _feed_cache["urls"]:
+            return {"status": "stale", "urls": _feed_cache["urls"]}
+        raise HTTPException(status_code=503, detail=f"OpenPhish feed unavailable: {str(e)}")
+
+
+class DetonateRequest(BaseModel):
+    url: str
+
+
+@app.post("/sandbox/detonate")
+async def detonate_url(body: DetonateRequest, current_user: dict = Depends(get_current_user)):
+    """SSE endpoint — streams live AI detonation logs + final JSON verdict."""
+    from langchain_ollama import OllamaLLM
+    import re as _re
+    llm = OllamaLLM(model="qwen2.5-coder:3b")
+
+    async def event_generator():
+        def sse(msg: str, event: str = "log") -> str:
+            return f"event: {event}\ndata: {msg}\n\n"
+
+        try:
+            yield sse("🚀 Initializing virtual detonation environment...")
+            await asyncio.sleep(0.3)
+
+            yield sse("🔍 Pre-processing URL with iocextract...")
+            refanged_list = list(_ioc.extract_urls(body.url, refang=True))
+            clean_url = refanged_list[0] if refanged_list else body.url
+            yield sse(f"✅ Normalized URL: {clean_url}")
+            await asyncio.sleep(0.3)
+
+            yield sse("🧠 Decomposing URL structure...")
+            from urllib.parse import urlparse, parse_qs
+            parsed = urlparse(clean_url)
+            domain = parsed.netloc or parsed.path
+            params = parse_qs(parsed.query)
+            suspicious_params = [k for k in params if k.lower() in ["redirect", "url", "next", "token", "confirm", "login", "session"]]
+            yield sse(f"🌐 Domain: {domain} | Path: {parsed.path}")
+            if suspicious_params:
+                yield sse(f"⚠️  Suspicious params detected: {', '.join(suspicious_params)}")
+            await asyncio.sleep(0.3)
+
+            yield sse("⚔️  Running AI heuristic detonation engine (Ollama)...")
+            prompt = f"""You are a virtual detonation system for phishing URL analysis. Analyze this URL: {clean_url}
+
+1. Identify the BRAND being impersonated (Microsoft, PayPal, Amazon, DHL, Binance, etc.)
+2. Identify suspicious techniques: redirect chains, credential harvesting, typosquatting
+3. Rate RISK SCORE 0-100
+4. Verdict: MALICIOUS, SUSPICIOUS, or CLEAN
+
+Respond ONLY in this exact JSON format:
+{{
+  "verdict": "MALICIOUS",
+  "risk_score": 95,
+  "brand_target": "Microsoft",
+  "technique": "Credential Harvesting",
+  "ioc_types": ["url", "domain"],
+  "suspicious_flags": ["fake login page", "non-official domain"],
+  "summary": "One sentence explanation"
+}}"""
+
+            response = await asyncio.to_thread(llm.invoke, prompt)
+            yield sse("✅ AI analysis complete. Parsing verdict...")
+            await asyncio.sleep(0.2)
+
+            match = _re.search(r'\{.*\}', response, _re.DOTALL)
+            if match:
+                verdict = json.loads(match.group(0))
+                verdict["url"] = clean_url
+                verdict["domain"] = domain
+                yield sse(f"🎯 Verdict: {verdict.get('verdict', 'N/A')} | Risk: {verdict.get('risk_score', 0)}/100")
+                yield sse(json.dumps(verdict), event="result")
+            else:
+                yield sse(json.dumps({"verdict": "UNKNOWN", "risk_score": 50, "url": clean_url, "domain": domain, "summary": response[:300]}), event="result")
+
+        except Exception as e:
+            yield sse(f"❌ Detonation error: {str(e)}", event="error")
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "Connection": "keep-alive"},
+    )
+
 
 if __name__ == "__main__":
-
-    # Lancement du serveur uvicorn
     uvicorn.run("backend.api:app", host="127.0.0.1", port=8000, reload=True)

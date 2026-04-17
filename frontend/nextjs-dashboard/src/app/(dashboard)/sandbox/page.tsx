@@ -1,283 +1,442 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { FlaskConical, Mail, FileCode2, ShieldAlert, Loader2, ArrowRight, Sparkles, Terminal, Cpu, ShieldCheck, X } from 'lucide-react';
-import SandboxReport from '@/components/SandboxReport';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  FlaskConical, Globe, Link as LinkIcon, ShieldAlert, Loader2,
+  Terminal, Cpu, ShieldCheck, AlertTriangle, CheckCircle2, Zap,
+  RefreshCw, Radio, Target, Activity, Eye, X
+} from 'lucide-react';
 
-const DETONATION_STEPS = [
-  "Initializing isolated VM environment (Windows 10 x64)...",
-  "Loading analysis engine 'Antigravity AI'...",
-  "Snapshotting clean system state...",
-  "Starting kernel-level API monitoring...",
-  "Detonating specimen in secure chamber...",
-  "Tracing process lifecycle and child forks...",
-  "Intercepting HTTP/SSL traffic...",
-  "Monitoring registry and file system modifications...",
-  "Running heuristic pattern matching...",
-  "Correlating behaviors with MITRE ATT&CK base...",
-  "Generating final forensic report..."
-];
+/* ── Verdict Helpers ────────────────────────────────────────── */
+const verdictConfig: Record<string, { bg: string; border: string; text: string; icon: React.ReactNode; glow: string }> = {
+  MALICIOUS: {
+    bg: 'bg-rose-500/10', border: 'border-rose-500/60', text: 'text-rose-400',
+    glow: 'shadow-[0_0_30px_rgba(244,63,94,0.3)]',
+    icon: <ShieldAlert className="w-6 h-6 text-rose-400" />,
+  },
+  SUSPICIOUS: {
+    bg: 'bg-amber-500/10', border: 'border-amber-500/60', text: 'text-amber-400',
+    glow: 'shadow-[0_0_30px_rgba(245,158,11,0.3)]',
+    icon: <AlertTriangle className="w-6 h-6 text-amber-400" />,
+  },
+  CLEAN: {
+    bg: 'bg-emerald-500/10', border: 'border-emerald-500/60', text: 'text-emerald-400',
+    glow: 'shadow-[0_0_30px_rgba(16,185,129,0.3)]',
+    icon: <CheckCircle2 className="w-6 h-6 text-emerald-400" />,
+  },
+  UNKNOWN: {
+    bg: 'bg-zinc-800/50', border: 'border-zinc-700', text: 'text-zinc-400',
+    glow: '',
+    icon: <Eye className="w-6 h-6 text-zinc-400" />,
+  },
+};
+
+const iocIcon: Record<string, React.ReactNode> = {
+  url: <LinkIcon className="w-3 h-3" />,
+  domain: <Globe className="w-3 h-3" />,
+  ip: <Cpu className="w-3 h-3" />,
+};
+
+/* ── Types ──────────────────────────────────────────────────── */
+interface FeedEntry { url: string; id: number; }
+interface DetonationResult {
+  verdict: string;
+  risk_score: number;
+  brand_target?: string;
+  technique?: string;
+  ioc_types?: string[];
+  suspicious_flags?: string[];
+  summary?: string;
+  url?: string;
+  domain?: string;
+}
 
 export default function SandboxPage() {
-  const [activeTab, setActiveTab] = useState<'email' | 'file'>('email');
-  const [content, setContent] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [report, setReport] = useState<any>(null);
+  const [feeds, setFeeds] = useState<FeedEntry[]>([]);
+  const [feedStatus, setFeedStatus] = useState<'loading' | 'live' | 'cache' | 'stale' | 'error'>('loading');
+  const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
+  const [logs, setLogs] = useState<string[]>([]);
+  const [result, setResult] = useState<DetonationResult | null>(null);
+  const [detonating, setDetonating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<{name: string, size: string} | null>(null);
-  const [detonationLogs, setDetonationLogs] = useState<string[]>([]);
-  
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const logEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (logEndRef.current) logEndRef.current.scrollIntoView({ behavior: 'smooth' });
-  }, [detonationLogs]);
+  }, [logs]);
 
-  const runDetonationSequence = async () => {
-    setDetonationLogs([]);
-    for (const step of DETONATION_STEPS) {
-      setDetonationLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${step}`]);
-      await new Promise(r => setTimeout(r, 250 + Math.random() * 400));
-    }
-  };
-
-  const handleAnalyze = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (activeTab === 'email' && !content.trim()) return;
-    if (activeTab === 'file' && !selectedFile) return;
-    
-    setLoading(true); setError(null); setReport(null);
-    await runDetonationSequence();
-
+  const saveToIncidents = async () => {
+    if (!result) return;
+    setSaving(true);
     try {
-      const token = window.localStorage.getItem('token');
-      const res = await fetch('http://127.0.0.1:8000/analyze-sandbox', {
+      const token = localStorage.getItem('token');
+      const payload = {
+        id: crypto.randomUUID(),
+        type: 'phishing-url',
+        verdict: result.verdict,
+        risk_score: result.risk_score,
+        timestamp: new Date().toISOString(),
+        details: {
+          url: result.url,
+          domain: result.domain,
+          brand_target: result.brand_target,
+          technique: result.technique,
+          suspicious_flags: result.suspicious_flags,
+          ioc_types: result.ioc_types,
+          summary: result.summary,
+          source: 'AI Sandbox / OpenPhish',
+        },
+      };
+      const res = await fetch('http://127.0.0.1:8000/incidents', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({
-          type: activeTab,
-          content: activeTab === 'file' ? selectedFile?.name : content
-        }),
+        body: JSON.stringify(payload),
       });
-
-      if (!res.ok) throw new Error('Analysis failed. Backend unreachable.');
-      setReport(await res.json());
+      if (!res.ok) throw new Error('Failed to save');
+      setSaved(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Analysis timeout');
+      setError(err instanceof Error ? err.message : 'Save failed');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  const simulateFileSelect = () => {
-    const files = [
-      { name: "invoice_9921.pdf.exe", size: "2.4 MB" },
-      { name: "update_patch_system.vbs", size: "12 KB" },
-      { name: "salary_spreadsheet_Q1.xlsx.js", size: "450 KB" }
-    ];
-    setSelectedFile(files[Math.floor(Math.random() * files.length)]);
-    setReport(null);
+  const fetchFeed = useCallback(async () => {
+    setFeedStatus('loading');
+    setFeeds([]);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://127.0.0.1:8000/sandbox/live-feed', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error('Feed fetch failed');
+      const data = await res.json();
+      setFeeds((data.urls as string[]).map((url: string, i: number) => ({ url, id: i })));
+      setFeedStatus(data.status);
+    } catch {
+      setFeedStatus('error');
+    }
+  }, []);
+
+  useEffect(() => { fetchFeed(); }, [fetchFeed]);
+
+  const handleDetonate = async (url: string) => {
+    setSelectedUrl(url);
+    setDetonating(true);
+    setLogs([]);
+    setResult(null);
+    setError(null);
+    setSaved(false);
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://127.0.0.1:8000/sandbox/detonate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ url }),
+      });
+
+      if (!res.ok || !res.body) throw new Error('Backend unreachable');
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const chunks = buffer.split('\n\n');
+        buffer = chunks.pop() ?? '';
+
+        for (const chunk of chunks) {
+          const lines = chunk.split('\n');
+          const eventLine = lines.find(l => l.startsWith('event:'));
+          const dataLine = lines.find(l => l.startsWith('data:'));
+          if (!dataLine) continue;
+
+          const eventType = eventLine?.replace('event:', '').trim() ?? 'log';
+          const data = dataLine.replace('data:', '').trim();
+
+          if (eventType === 'result') {
+            try { setResult(JSON.parse(data)); } catch { /* ignore */ }
+          } else if (eventType === 'error') {
+            setError(data);
+          } else {
+            setLogs(prev => [...prev, data]);
+          }
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Connection error');
+    } finally {
+      setDetonating(false);
+    }
   };
 
+  const feedStatusBadge: Record<string, string> = {
+    live: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400',
+    cache: 'bg-blue-500/10 border-blue-500/30 text-blue-400',
+    stale: 'bg-amber-500/10 border-amber-500/30 text-amber-400',
+    error: 'bg-rose-500/10 border-rose-500/30 text-rose-400',
+    loading: 'bg-zinc-800 border-zinc-700 text-zinc-500',
+  };
+
+  const cfg = result ? (verdictConfig[result.verdict] ?? verdictConfig.UNKNOWN) : null;
+
   return (
-    <div className="space-y-8 max-w-[1600px] mx-auto animate-in fade-in duration-700">
-      
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+    <div className="space-y-6 max-w-[1700px] mx-auto animate-in fade-in duration-700">
+
+      {/* ── Header ───────────────────────────────────────── */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-500 tracking-tight mb-2">
+          <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-500 tracking-tight mb-1">
             AI <span className="text-indigo-400">Sandbox</span>
           </h1>
           <p className="text-xs font-bold tracking-widest uppercase text-zinc-500 flex items-center gap-2">
             <FlaskConical className="w-4 h-4 text-indigo-500 animate-pulse" />
-            Heuristic Malware Detonation Chamber
+            Live Phishing Detonation Console · Powered by OpenPhish + Ollama
           </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full border ${feedStatusBadge[feedStatus]}`}>
+            {feedStatus === 'live' && '● LIVE FEED'}
+            {feedStatus === 'cache' && '● CACHED'}
+            {feedStatus === 'stale' && '⚠ STALE'}
+            {feedStatus === 'error' && '✕ FEED ERROR'}
+            {feedStatus === 'loading' && '○ LOADING...'}
+          </span>
+          <button
+            onClick={fetchFeed}
+            disabled={feedStatus === 'loading'}
+            className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] text-zinc-400 hover:text-white px-3 py-1.5 rounded-xl transition-all"
+          >
+            <RefreshCw className={`w-3 h-3 ${feedStatus === 'loading' ? 'animate-spin' : ''}`} /> Refresh
+          </button>
         </div>
       </div>
 
-      {/* Main Analysis Tool */}
-      {!loading && !report && (
-        <section className="bg-[#0a0a0a]/50 backdrop-blur-xl rounded-3xl border border-white/[0.05] shadow-2xl overflow-hidden relative scale-in-center">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[80px] pointer-events-none" />
-          
-          {/* Tabs Navigation */}
-          <div className="flex border-b border-white/[0.05] p-2 gap-2 relative z-10 bg-white/[0.01]">
-            <button 
-              onClick={() => { setActiveTab('email'); setReport(null); }}
-              className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${
-                activeTab === 'email' 
-                  ? 'bg-indigo-600 text-white shadow-[0_0_20px_-5px_rgba(79,70,229,0.5)]' 
-                  : 'text-zinc-500 hover:bg-white/[0.03] hover:text-white'
-              }`}
-            >
-              <Mail className="w-4 h-4" /> Analyse Email
-            </button>
-            <button 
-              onClick={() => { setActiveTab('file'); setReport(null); }}
-              className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${
-                activeTab === 'file' 
-                  ? 'bg-indigo-600 text-white shadow-[0_0_20px_-5px_rgba(79,70,229,0.5)]' 
-                  : 'text-zinc-500 hover:bg-white/[0.03] hover:text-white'
-              }`}
-            >
-              <FileCode2 className="w-4 h-4" /> Binaire / Malware
-            </button>
+      {/* ── Split Layout ─────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6">
+
+        {/* LEFT — Live Feed Panel */}
+        <div className="bg-[#0a0a0a]/60 backdrop-blur-xl border border-white/[0.05] rounded-3xl overflow-hidden shadow-2xl flex flex-col">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-white/[0.05] bg-white/[0.01]">
+            <Radio className="w-4 h-4 text-rose-400 animate-pulse" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-300">OpenPhish Live Feed</span>
+            <span className="ml-auto text-[9px] text-zinc-600 font-bold">{feeds.length} URLs</span>
           </div>
 
-          {/* Input Area */}
-          <div className="p-8 relative z-10">
-            <form onSubmit={handleAnalyze} className="space-y-6">
-              {activeTab === 'email' ? (
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center px-4">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Source EML Brute</label>
-                    <span className="text-[9px] bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 px-2 py-1 rounded font-black tracking-widest">AI v3</span>
+          <div className="flex-1 overflow-y-auto max-h-[700px] divide-y divide-white/[0.03]">
+            {feedStatus === 'loading' && (
+              <div className="flex flex-col items-center justify-center py-20 gap-4">
+                <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+                <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">Fetching OpenPhish feed...</p>
+              </div>
+            )}
+            {feedStatus === 'error' && (
+              <div className="flex flex-col items-center justify-center py-20 gap-4 text-rose-400">
+                <ShieldAlert className="w-8 h-8" />
+                <p className="text-[10px] font-black uppercase tracking-widest">Feed Unavailable</p>
+                <button onClick={fetchFeed} className="text-[9px] border border-rose-500/30 hover:bg-rose-500/10 px-4 py-2 rounded-xl transition-colors">Retry</button>
+              </div>
+            )}
+            {feeds.map(({ url, id }) => (
+              <button
+                key={id}
+                onClick={() => !detonating && handleDetonate(url)}
+                disabled={detonating}
+                className={`w-full text-left px-5 py-4 transition-all group hover:bg-indigo-500/5 ${selectedUrl === url ? 'bg-indigo-500/10 border-l-2 border-indigo-500' : 'border-l-2 border-transparent'}`}
+              >
+                <div className="flex items-start gap-3">
+                  <Globe className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${selectedUrl === url ? 'text-indigo-400' : 'text-zinc-600 group-hover:text-indigo-400'} transition-colors`} />
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-mono text-zinc-400 break-all line-clamp-2 group-hover:text-zinc-200 transition-colors select-none">
+                      {url}
+                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-[8px] font-black bg-rose-500/10 border border-rose-500/20 text-rose-400 px-2 py-0.5 rounded uppercase tracking-widest">
+                        Phishing
+                      </span>
+                      {selectedUrl === url && (
+                        <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest">● Selected</span>
+                      )}
+                    </div>
                   </div>
-                  <textarea 
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    placeholder="Coller l'en-tête ou le corps de l'email suspect..."
-                    className="w-full h-48 bg-[#030303] border border-white/[0.05] focus:border-indigo-500/50 rounded-2xl p-6 text-sm text-zinc-300 font-mono transition-all outline-none resize-none shadow-inner custom-scrollbar"
-                  />
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {!selectedFile ? (
-                    <div 
-                      onClick={simulateFileSelect}
-                      className="border border-dashed border-white/[0.1] rounded-3xl p-16 flex flex-col items-center justify-center text-center group hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all cursor-pointer bg-[#030303]/50"
-                    >
-                      <div className="w-20 h-20 bg-[#0a0a0a] rounded-2xl shadow-xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(79,70,229,0.3)] transition-all border border-white/[0.05]">
-                          <FileCode2 className="w-8 h-8 text-zinc-600 group-hover:text-indigo-400 transition-colors" />
-                      </div>
-                      <h3 className="text-xl font-black text-white">Sélectionner Fichier Suspect</h3>
-                      <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mt-2">Dépôt sécurisé (Isolation activée)</p>
-                    </div>
-                  ) : (
-                    <div className="bg-[#030303] border border-indigo-500/30 rounded-2xl p-6 flex items-center justify-between shadow-[0_0_20px_-5px_rgba(79,70,229,0.2)]">
-                       <div className="flex items-center gap-5">
-                          <div className="bg-indigo-600/20 border border-indigo-500/50 p-4 rounded-xl shadow-[0_0_15px_rgba(79,70,229,0.4)]">
-                             <FileCode2 className="w-6 h-6 text-indigo-400" />
-                          </div>
-                          <div>
-                             <h4 className="font-black text-white text-lg tracking-tight">{selectedFile.name}</h4>
-                             <p className="text-[10px] font-black tracking-widest text-zinc-500 uppercase">{selectedFile.size} • Payload Isolé</p>
-                          </div>
-                       </div>
-                       <button 
-                        type="button" onClick={() => setSelectedFile(null)}
-                        className="p-3 hover:bg-white/[0.05] rounded-full transition-colors text-zinc-500 hover:text-white"
-                       >
-                          <X className="w-5 h-5" />
-                       </button>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-center gap-4 py-4">
-                     <div className="flex items-center gap-2 text-[9px] font-black text-emerald-400 uppercase tracking-widest border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 rounded-lg shadow-[0_0_10px_rgba(16,185,129,0.2)]">
-                        <ShieldCheck className="w-3 h-3" /> Gated VM
-                     </div>
-                     <div className="flex items-center gap-2 text-[9px] font-black text-blue-400 uppercase tracking-widest border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 rounded-lg shadow-[0_0_10px_rgba(59,130,246,0.2)]">
-                        <Cpu className="w-3 h-3" /> Static + Dynamic
-                     </div>
+              </button>
+            ))}
+          </div>
+
+          <div className="px-5 py-3 border-t border-white/[0.05] bg-white/[0.01]">
+            <p className="text-[8px] text-zinc-600 font-bold uppercase tracking-widest text-center">
+              ⚠ Threat data for research only. Do not access URLs directly.
+            </p>
+          </div>
+        </div>
+
+        {/* RIGHT — Console Panel */}
+        <div className="bg-[#030303] border border-white/[0.07] rounded-3xl overflow-hidden shadow-2xl flex flex-col min-h-[500px]">
+
+          {/* Console Header */}
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-white/[0.05] bg-white/[0.01]">
+            <Terminal className="w-4 h-4 text-emerald-500" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-300">Detonation Console</span>
+            {detonating && (
+              <span className="ml-auto flex items-center gap-2 text-[9px] font-black text-indigo-400 uppercase tracking-widest animate-pulse">
+                <Loader2 className="w-3 h-3 animate-spin" /> Active
+              </span>
+            )}
+            {!detonating && selectedUrl && (
+              <button onClick={() => { setSelectedUrl(null); setLogs([]); setResult(null); setError(null); }}
+                className="ml-auto p-1.5 hover:bg-white/[0.05] rounded-lg text-zinc-500 hover:text-white transition-colors">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Empty State */}
+          {!selectedUrl && (
+            <div className="flex-1 flex flex-col items-center justify-center gap-6 p-10 opacity-30">
+              <Target className="w-16 h-16 text-zinc-600" />
+              <div className="text-center">
+                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Select a target from the live feed</p>
+                <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest">AI detonation will stream in real-time</p>
+              </div>
+            </div>
+          )}
+
+          {/* Terminal Log Stream */}
+          {selectedUrl && (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Target URL bar */}
+              <div className="px-6 py-3 bg-zinc-900/50 border-b border-white/[0.04] flex items-center gap-3">
+                <Activity className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                <p className="font-mono text-[10px] text-zinc-400 break-all select-all">{selectedUrl}</p>
+              </div>
+
+              {/* Logs */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-1.5 font-mono text-[11px] bg-[#010101]">
+                {logs.map((log, i) => (
+                  <div key={i} className="flex items-start gap-3 animate-in slide-in-from-bottom-1 duration-200">
+                    <span className="text-zinc-700 shrink-0 tabular-nums">[{String(i + 1).padStart(2, '0')}]</span>
+                    <span className={`${log.includes('✅') ? 'text-emerald-400' : log.includes('⚠️') || log.includes('⚠') ? 'text-amber-400' : log.includes('❌') ? 'text-rose-400' : log.includes('🎯') ? 'text-indigo-400' : 'text-zinc-400'}`}>{log}</span>
                   </div>
+                ))}
+                {detonating && logs.length > 0 && (
+                  <div className="text-emerald-500 animate-pulse ml-8">▋</div>
+                )}
+                {logs.length === 0 && detonating && (
+                  <div className="text-zinc-600 text-center py-10">Connecting to detonation engine...</div>
+                )}
+                <div ref={logEndRef} />
+              </div>
+
+              {/* Error */}
+              {error && (
+                <div className="mx-6 mb-4 p-4 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center gap-3 text-rose-400">
+                  <ShieldAlert className="w-4 h-4 shrink-0" />
+                  <p className="text-[11px] font-bold">{error}</p>
                 </div>
               )}
 
-              <div className="flex justify-center pt-6">
-                <button 
-                  type="submit"
-                  disabled={loading || (activeTab === 'email' && !content.trim()) || (activeTab === 'file' && !selectedFile)}
-                  className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-white/[0.05] disabled:text-zinc-600 text-white font-black px-12 py-5 rounded-2xl shadow-[0_0_30px_-5px_rgba(79,70,229,0.6)] transition-all active:scale-95 flex items-center gap-4 group disabled:shadow-none"
-                >
-                  DÉCLENCHER DÉTONATION IA
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
-                </button>
-              </div>
-            </form>
-          </div>
-        </section>
-      )}
-
-      {/* Detonation Loading Screen */}
-      {loading && (
-        <section className="bg-[#030303] rounded-3xl border border-white/[0.1] shadow-[0_0_50px_rgba(79,70,229,0.15)] overflow-hidden animate-in zoom-in duration-500">
-           <div className="p-10 flex flex-col items-center">
-              <div className="relative mb-10 text-center">
-                 <div className="absolute inset-0 bg-indigo-500/20 blur-[60px]" />
-                 <div className="w-32 h-32 border-2 border-indigo-500/30 rounded-full border-t-indigo-500 animate-spin shadow-[0_0_30px_rgba(79,70,229,0.5)] mx-auto relative z-10" />
-                 <FlaskConical className="w-10 h-10 text-indigo-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10" />
-                 <div className="mt-8 relative z-10">
-                    <h2 className="text-xl font-black text-white uppercase tracking-widest text-shadow-glow">DETONATION ACTIVE</h2>
-                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-2">Environnement Hyper-V v3</p>
-                 </div>
-              </div>
-              
-              <div className="w-full max-w-3xl bg-[#0a0a0a] rounded-2xl p-6 border border-white/[0.05] font-mono text-[10px] shadow-inner relative z-10">
-                 <div className="flex items-center gap-2 mb-4 border-b border-white/[0.05] pb-3">
-                    <Terminal className="w-3.5 h-3.5 text-emerald-500" />
-                    <span className="text-zinc-500 font-black uppercase tracking-widest">Gated Kernel Output</span>
-                 </div>
-                 <div className="space-y-1.5 h-[160px] overflow-hidden custom-scrollbar">
-                    {detonationLogs.map((log, i) => (
-                      <div key={i} className="text-emerald-500/90 flex gap-4 animate-in slide-in-from-bottom-2">
-                        <span className="opacity-40 text-zinc-500">[{`${i+1}`.padStart(2, '0')}]</span>
-                        <span className="font-medium">{log}</span>
+              {/* Verdict Card */}
+              {result && cfg && (
+                <div className={`mx-6 mb-6 p-6 rounded-2xl border ${cfg.bg} ${cfg.border} ${cfg.glow} animate-in slide-in-from-bottom-4 duration-500`}>
+                  <div className="flex items-start justify-between mb-5">
+                    <div className="flex items-center gap-3">
+                      {cfg.icon}
+                      <div>
+                        <p className={`text-xl font-black uppercase tracking-widest ${cfg.text}`}>{result.verdict}</p>
+                        <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">AI Detonation Verdict</p>
                       </div>
-                    ))}
-                    <div ref={logEndRef} />
-                    {detonationLogs.length < DETONATION_STEPS.length && (
-                      <div className="text-emerald-500 animate-pulse mt-2 ml-10">_</div>
+                    </div>
+                    <div className="text-right">
+                      <p className={`text-3xl font-black tabular-nums ${cfg.text}`}>{result.risk_score}<span className="text-sm text-zinc-600">/100</span></p>
+                      <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">Risk Score</p>
+                    </div>
+                  </div>
+
+                  {/* Risk bar */}
+                  <div className="h-1.5 w-full bg-white/[0.05] rounded-full mb-5 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-1000 ${result.risk_score >= 70 ? 'bg-rose-500' : result.risk_score >= 40 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                      style={{ width: `${result.risk_score}%` }}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    {result.brand_target && (
+                      <div className="bg-black/30 rounded-xl p-3">
+                        <p className="text-[8px] text-zinc-600 font-black uppercase tracking-widest mb-1">Brand Target</p>
+                        <p className="text-[11px] font-bold text-white">{result.brand_target}</p>
+                      </div>
                     )}
-                 </div>
-              </div>
-           </div>
-        </section>
-      )}
+                    {result.technique && (
+                      <div className="bg-black/30 rounded-xl p-3">
+                        <p className="text-[8px] text-zinc-600 font-black uppercase tracking-widest mb-1">Technique</p>
+                        <p className="text-[11px] font-bold text-white">{result.technique}</p>
+                      </div>
+                    )}
+                  </div>
 
-      {/* Error Message */}
-      {error && !loading && (
-        <div className="p-8 bg-rose-500/5 border border-rose-500/20 rounded-3xl flex items-center gap-6 text-rose-400 animate-in bounce-in duration-300 shadow-[0_0_30px_rgba(244,63,94,0.1)]">
-          <div className="bg-rose-500/20 border border-rose-500/50 p-3 rounded-2xl shadow-lg shadow-rose-500/10">
-             <ShieldAlert className="w-6 h-6 text-rose-400" />
-          </div>
-          <div>
-            <h4 className="font-black uppercase tracking-widest text-[10px] mb-1">Échec de la Séquence</h4>
-            <p className="font-bold text-sm text-zinc-300">{error}</p>
-          </div>
+                  {result.suspicious_flags && result.suspicious_flags.length > 0 && (
+                    <div className="mb-4 flex flex-wrap gap-2">
+                      {result.suspicious_flags.map((flag, i) => (
+                        <span key={i} className="text-[9px] font-black bg-rose-500/10 border border-rose-500/20 text-rose-400 px-2 py-1 rounded-lg uppercase tracking-widest">
+                          ⚑ {flag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {result.ioc_types && result.ioc_types.length > 0 && (
+                    <div className="mb-4 flex flex-wrap gap-2">
+                      {result.ioc_types.map((t, i) => (
+                        <div key={i} className="flex items-center gap-1.5 bg-white/[0.03] border border-white/[0.08] px-2 py-1 rounded-lg text-zinc-400">
+                          {iocIcon[t.toLowerCase()] ?? <Zap className="w-3 h-3" />}
+                          <span className="text-[9px] font-black uppercase tracking-widest">{t}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {result.summary && (
+                    <p className="text-[11px] text-zinc-400 font-medium leading-relaxed border-t border-white/[0.05] pt-3 mt-1">{result.summary}</p>
+                  )}
+
+                  {/* Save to Incidents button */}
+                  <div className="mt-4 pt-4 border-t border-white/[0.05] flex justify-end">
+                    {saved ? (
+                      <div className="flex items-center gap-2 text-emerald-400 text-[10px] font-black uppercase tracking-widest">
+                        <CheckCircle2 className="w-4 h-4" /> Saved to Incidents
+                      </div>
+                    ) : (
+                      <button
+                        onClick={saveToIncidents}
+                        disabled={saving}
+                        className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl shadow-[0_0_20px_-5px_rgba(79,70,229,0.5)] transition-all"
+                      >
+                        {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+                        {saving ? 'Saving...' : 'Save to Incidents'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
-      )}
-
-      {/* Report Section */}
-      {report && !loading && (
-        <div className="space-y-6 animate-in slide-in-from-bottom-8 duration-700">
-           <div className="flex items-center justify-between px-4">
-              <h3 className="text-[10px] font-black text-violet-400 uppercase tracking-widest">Rapport Forensique IA</h3>
-              <button 
-                onClick={() => { setReport(null); setSelectedFile(null); setContent(''); }}
-                className="text-[10px] font-black tracking-widest uppercase text-white hover:text-indigo-300 bg-white/[0.05] border border-white/[0.1] hover:border-indigo-500/50 px-5 py-2.5 rounded-xl transition-all"
-              >
-                 Nouveau Spécimen
-              </button>
-           </div>
-           
-           <div className="bg-[#0a0a0a]/50 backdrop-blur-xl rounded-3xl p-6 border border-white/[0.05] shadow-2xl relative overflow-hidden">
-               {/* Note: SandboxReport Component Inside. Si SandboxReport n'est pas stylisé Thematically, il faut l'éditer plus tard. */}
-               <SandboxReport data={report} />
-           </div>
-        </div>
-      )}
-
-      {/* Placeholder Welcome */}
-      {!report && !loading && (
-        <div className="flex flex-col items-center justify-center py-20 opacity-30">
-           <Sparkles className="w-10 h-10 text-zinc-500 mb-6" />
-           <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Système Prêt</p>
-        </div>
-      )}
-
+      </div>
     </div>
   );
 }
