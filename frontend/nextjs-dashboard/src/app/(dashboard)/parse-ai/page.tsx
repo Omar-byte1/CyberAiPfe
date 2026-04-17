@@ -375,6 +375,25 @@ export default function ParseAIPage() {
               {event.description}
             </p>
 
+            {/* MITRE ATT&CK Section */}
+            {event.mitre_techniques && event.mitre_techniques.length > 0 && (
+              <div className="mb-10">
+                <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                  <Zap className="w-3 h-3 text-orange-500" /> MITRE ATT&CK Techniques
+                </h4>
+                <div className="flex flex-wrap gap-3">
+                  {event.mitre_techniques.map((tech: any, i: number) => (
+                    <div key={i} className="flex items-center gap-3 bg-white/[0.03] border border-white/[0.08] px-4 py-2 rounded-xl group hover:border-orange-500/50 transition-colors">
+                      <span className="text-[10px] font-black text-orange-400 tabular-nums">{tech.id}</span>
+                      <div className="w-[1px] h-3 bg-white/[0.1]" />
+                      <span className="text-[10px] font-black text-zinc-300 uppercase tracking-widest">{tech.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+
             {/* Tags */}
             {event.tags && event.tags.length > 0 && (
               <div className="mb-10">
@@ -420,8 +439,24 @@ export default function ParseAIPage() {
                       <div className="relative pl-3 border-l-2 border-emerald-500/50 mb-3 group-hover:border-emerald-400 transition-colors">
                         <p className="font-mono text-sm font-bold text-white break-all select-all">{attr.value}</p>
                       </div>
+
+                      {/* Geo-IP Enrichment */}
+                      {attr.geo_localisation && attr.geo_localisation.length > 0 && (
+                        <div className="mb-3 flex flex-wrap gap-2">
+                          {attr.geo_localisation.map((geo: any, j: number) => (
+                            <div key={j} className="flex items-center gap-2 bg-blue-500/5 border border-blue-500/20 px-2 py-1 rounded-lg">
+                              <Globe className="w-3 h-3 text-blue-400" />
+                              <span className="text-[9px] font-black text-blue-300 uppercase tracking-widest">
+                                {geo.city}, {geo.country} — {geo.isp}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       <p className="text-[10px] text-zinc-500 font-medium line-clamp-2" title={attr.comment}>{attr.comment}</p>
                     </div>
+
                   ))}
                 </div>
               ) : (

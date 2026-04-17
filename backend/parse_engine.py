@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import uuid
 import datetime
@@ -7,6 +8,7 @@ import requests
 from scrapling.fetchers import StealthyFetcher, StealthySession, AsyncStealthySession
 from langchain_ollama import OllamaLLM
 import iocextract
+import httpx
 
 # ---------------------------------------------------------------------------
 # IOC Whitelist — Benign domains that must NEVER be stored as threat indicators
@@ -19,6 +21,22 @@ WHITELIST: set[str] = {
     "bbc.com", "forbes.com", "wired.com", "theregister.com", "arstechnica.com",
     "vice.com", "medium.com", "substack.com", "techcrunch.com",
 }
+
+# ---------------------------------------------------------------------------
+# MITRE Heuristic Mapper — Maps common keywords to T-codes if LLM misses them
+# ---------------------------------------------------------------------------
+MITRE_MAP = {
+    "phishing": "T1566",
+    "ransomware": "T1486",
+    "brute-force": "T1110",
+    "sql injection": "T1190",
+    "persistence": "T1078",
+    "exfiltration": "T1041",
+    "privilege escalation": "T1068",
+    "backdoor": "T1543",
+    "command and control": "T1071",
+}
+
 
 class ParseEngine:
     def __init__(self):
@@ -77,6 +95,28 @@ class ParseEngine:
         initial_iocs = {"ips": ips, "urls": urls, "emails": emails, "hashes": hashes}
         return refanged, initial_iocs
 
+    async def _enrich_geoip(self, ip: str) -> dict | None:
+        """
+        Enriches an IP address with Geographical metadata using ip-api.com.
+        """
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(f"http://ip-api.com/json/{ip}?fields=status,message,country,countryCode,regionName,city,lat,lon,isp,org,as")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    if data.get("status") == "success":
+                        return {
+                            "country": data.get("country"),
+                            "country_code": data.get("countryCode"),
+                            "city": data.get("city"),
+                            "isp": data.get("isp"),
+                            "lat": data.get("lat"),
+                            "lon": data.get("lon"),
+                        }
+        except Exception as e:
+            print(f"🌍 Geo-IP enrichment failed for {ip}: {str(e)}")
+        return None
+
     def post_validate(self, attributes: list) -> list:
         """
         Phase 4 — Post-processing (iocextract validation):
@@ -92,12 +132,63 @@ class ParseEngine:
             value = str(attr.get("value", "")).strip()
             if not value or value in seen:
                 continue
+
+            # --- URL Normalization (Fix for LLM dropping //) ---
+            if attr.get("type") == "url":
+                # Fix http:example.com -> http://example.com
+                value = re.sub(r'^(https?):(?![/]{2})', r'\1://', value, flags=re.IGNORECASE)
+                attr["value"] = value
+
             # Whitelist guard
             if any(w in value.lower() for w in WHITELIST):
                 continue
             seen.add(value)
             cleaned.append(attr)
         return cleaned
+
+    def _scraper_api_fetch(self, url: str) -> str | None:
+        """
+        Strategy C — ScraperAPI (CAPTCHA + Residential Proxies).
+        Triggered automatically when Strategies A & B are blocked.
+        Requires SCRAPER_API_KEY env var (free tier: 1 000 req/month).
+        Sign up at https://www.scraperapi.com
+        """
+        api_key = os.environ.get("SCRAPER_API_KEY", "")
+        if not api_key:
+            print("⚠️  SCRAPER_API_KEY not set — Strategy C unavailable. Add it to your .env file.")
+            return None
+
+        print("🌐 Strategy C → ScraperAPI (CAPTCHA + Residential proxies)...")
+        try:
+            params = {
+                "api_key":    api_key,
+                "url":        url,
+                "render":     "true",   # JavaScript rendering (handles SPAs)
+                "premium":    "true",   # Residential IP pool (bypasses most blocks)
+                "country_code": "us",  # Exit node location
+            }
+            resp = requests.get(
+                "https://api.scraperapi.com",
+                params=params,
+                timeout=120,            # ScraperAPI can be slow on hard targets
+            )
+            if resp.status_code == 200:
+                content = resp.text
+                is_still_blocked = (
+                    "Access Denied"           in content or
+                    "Just a moment"           in content or
+                    "cf-browser-verification" in content or
+                    "challenge-platform"      in content
+                )
+                if not is_still_blocked and len(content) > 200:
+                    print("✅ Strategy C success via ScraperAPI!")
+                    return content
+                print("❌ ScraperAPI returned a challenge/empty page.")
+            else:
+                print(f"❌ ScraperAPI returned HTTP {resp.status_code}")
+        except Exception as exc:
+            print(f"❌ ScraperAPI exception: {exc}")
+        return None
 
     def clean_for_ai(self, html_content: str) -> str:
         """
@@ -122,10 +213,10 @@ class ParseEngine:
     async def scrape_url(self, url: str) -> str:
         """
         Universal Fetching Engine V6.0 - Windows-compatible hybrid architecture.
-        Strategy A: Pure requests HTTP (fast, no browser, no asyncio conflict).
-        Strategy B: StealthyFetcher in isolated thread with its own ProactorEventLoop.
         """
         import asyncio
+        url = url.strip().rstrip('/') # Clean leading/trailing whitespace and slashes
+        print(f"DEBUG: Final URL to fetch: '{url}'")
         print(f"🔍 Tentative de récupération universelle : {url}")
         
         try:
@@ -179,8 +270,23 @@ class ParseEngine:
                     print(f"✅ Succès (200) via StealthyFetcher (thread+ProactorLoop)")
                     html_content = page.body
             
+            if status_code == 404:
+                error_msg = f"Error: Page not found (404). Please check your URL."
+                if "bleepingcomputer.com" in url and not url.endswith(".html"):
+                    error_msg += " (Hint: BleepingComputer links usually end in .html)"
+                return error_msg
+
             if not html_content:
-                return f"Error: Failed to fetch {url} (Status {status_code})"
+                # Strategy C is only for security bypass, not for broken links
+                if status_code in [403, 401] or status_code == 0:
+                    print(f"🔄 Strategy A+B failed with status {status_code}. Trying Strategy C (ScraperAPI)...")
+                    scraperapi_content = self._scraper_api_fetch(url)
+                    if scraperapi_content:
+                        html_content = scraperapi_content
+                    else:
+                        return f"Error: All bypass strategies exhausted (A→B→C). Status={status_code}"
+                else:
+                    return f"Error: Failed to fetch {url} (Status {status_code})."
 
             # Assurer que le contenu est une chaîne de caractères
             if isinstance(html_content, (bytes, bytearray)):
@@ -225,11 +331,34 @@ class ParseEngine:
                     if "Access Denied" not in page_body and "Just a moment" not in page_body:
                         html_content = page_body
                     else:
-                        return "Error: Cloudflare bypass failed — site is fully protected."
+                        # ---- Strategy C: ScraperAPI last resort ----
+                        print("🛡️ Browser bypass returned a challenge page. Trying Strategy C (ScraperAPI)...")
+                        scraperapi_content = self._scraper_api_fetch(url)
+                        if scraperapi_content:
+                            html_content = scraperapi_content
+                        else:
+                            return "Error: All bypass strategies exhausted (A→B→C). Site is fully protected."
+                elif page.status == 404:
+                    return "Error: Page not found (404) via browser. Check your URL."
                 else:
-                    return f"Error: Browser bypass failed (Status {page.status})."
+                    # ---- Strategy C: ScraperAPI last resort ----
+                    if page.status in [403, 401]:
+                        print(f"🔄 Browser returned status {page.status}. Trying Strategy C (ScraperAPI)...")
+                        scraperapi_content = self._scraper_api_fetch(url)
+                        if scraperapi_content:
+                            html_content = scraperapi_content
+                        else:
+                            return f"Error: All bypass strategies exhausted (A→B→C). Browser status={page.status}."
+                    else:
+                        return f"Error: Browser failed with status {page.status}."
             elif is_challenge:
-                return "Error: Access Denied / Security Challenge detected after all attempts."
+                # ---- Strategy C: ScraperAPI last resort ----
+                print("🛡️ Access Denied after all browser attempts. Trying Strategy C (ScraperAPI)...")
+                scraperapi_content = self._scraper_api_fetch(url)
+                if scraperapi_content:
+                    html_content = scraperapi_content
+                else:
+                    return "Error: All bypass strategies exhausted (A→B→C). Access Denied."
 
             # --- Nettoyage et Optimisation pour l'IA ---
             # On extrait quand même quelques métadonnées si possible avant le gros nettoyage
@@ -301,6 +430,7 @@ PRE-DETECTED IOCs (extracted by iocextract — use as a cross-reference for attr
           "threat_level": 0-4,
           "tlp_label": "TLP:RED",
           "tags": [{{"name": "nom", "color": "couleur_hex_ou_nom"}}],
+          "mitre_techniques": [{{"id": "T1XXX", "name": "Nom de la technique"}}],
           "attributes": [
             {{
               "type": "domain|url|ip-dst|sha256|cve-id|mitre-attack-id",
@@ -310,6 +440,7 @@ PRE-DETECTED IOCs (extracted by iocextract — use as a cross-reference for attr
               "comment": "contexte"
             }}
           ],
+
           "website": "{url}",
           "author": "Auteur si connu",
           "date_occured": "YYYY-MM-DD"
@@ -353,17 +484,57 @@ PRE-DETECTED IOCs (extracted by iocextract — use as a cross-reference for attr
                 "is_verified": False,
                 "organisation": {"name": "threatseye", "uuid": str(uuid.uuid4())}
             })
+
+            # --- Threat Level Heuristic (Correction for small LLMs) ---
+            # If AI says it's level 2-4 but mentions "ransomware" or "apt", force it to 0 (Critical)
+            title_lower = event_data.get("info", "").lower()
+            tag_names = [t.get("name", "").lower() for t in event_data.get("tags", [])]
+            
+            critical_keywords = ["ransomware", "apt", "zero-day", "0-day", "critical", "rce"]
+            if any(kw in title_lower for kw in critical_keywords) or any(kw in tag_names for kw in critical_keywords):
+                if event_data.get("threat_level", 4) > 0:
+                    print(f"🚩 Heuristic: Boosting threat level to 0 (Critical) based on keywords.")
+                    event_data["threat_level"] = 0
+                    # Sync TLP to RED if it was GREEN/CLEAR
+                    if event_data.get("tlp_label") in ["TLP:GREEN", "TLP:CLEAR"]:
+                        event_data["tlp_label"] = "TLP:RED"
+                        event_data["TLP"] = [{"name": "TLP:RED", "color": self.tlp_config["TLP:RED"]}]
             
             if "attributes" in event_data:
                 # Phase 4: Post-validate — whitelist filter + deduplication
                 event_data["attributes"] = self.post_validate(event_data["attributes"])
+                
+                # --- Advanced Enrichment Sub-Phase ---
                 for attr in event_data["attributes"]:
+                    attr_type = attr.get("type")
+                    attr_value = attr.get("value")
+                    
+                    # 1. Geo-IP Enrichment
+                    geo_data = []
+                    if attr_type == "ip-dst":
+                        print(f"🌍 Enriching Geo-IP for {attr_value}...")
+                        result = await self._enrich_geoip(attr_value)
+                        if result:
+                            geo_data = [result]
+                    
                     attr.update({
                         "uuid": str(uuid.uuid4()),
                         "timestamp": unix_now,
                         "data": "",
-                        "geo_localisation": []
+                        "geo_localisation": geo_data
                     })
+
+            # --- MITRE Heuristic & Tag Sync ---
+            if "mitre_techniques" not in event_data:
+                event_data["mitre_techniques"] = []
+                
+            # If AI missed techniques, check description/tags for keywords
+            content_to_check = (event_data.get("description", "") + " " + event_data.get("info", "")).lower()
+            for keyword, t_code in MITRE_MAP.items():
+                if keyword in content_to_check:
+                    # Add to techniques if not already there
+                    if not any(t.get("id") == t_code for t in event_data["mitre_techniques"]):
+                        event_data["mitre_techniques"].append({"id": t_code, "name": keyword.capitalize()})
 
             return event_data
             

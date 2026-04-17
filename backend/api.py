@@ -3,6 +3,11 @@ import json
 import uvicorn
 import asyncio
 import sys
+import os
+from dotenv import load_dotenv
+
+# Load .env file (SCRAPER_API_KEY, SECRET_KEY, etc.)
+load_dotenv()
 
 # Fix for Playwright/Patchright on Windows: requires ProactorEventLoop for subprocess support
 if sys.platform == "win32":
