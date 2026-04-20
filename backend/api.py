@@ -4,6 +4,7 @@ import uvicorn
 import asyncio
 import sys
 import os
+import time
 from dotenv import load_dotenv
 
 # Load .env file (SCRAPER_API_KEY, SECRET_KEY, etc.)
@@ -73,6 +74,63 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+#  Progressive Login Rate Limiting
+#  After every 3 failed attempts the lockout duration increases:
+#  3 fails  → 60 s  (1 min)
+#  6 fails  → 120 s (2 min)
+#  9 fails  → 300 s (5 min)
+#  12 fails → 600 s (10 min)
+#  15+ fails → 1800 s (30 min)
+# ─────────────────────────────────────────────────────────────────────────────
+_LOCKOUT_THRESHOLDS = [
+    (3,  60),
+    (6,  120),
+    (9,  300),
+    (12, 600),
+]  # (fail_count_threshold, lockout_seconds)
+_LOCKOUT_MAX = 1800  # 30 minutes for >= 15 failures
+
+# { username: {"fail_count": int, "locked_until": float (epoch seconds)} }
+_login_attempts: dict[str, dict] = {}
+
+
+def _get_lockout_duration(fail_count: int) -> int:
+    """Return lockout duration in seconds based on cumulative fail count."""
+    for threshold, duration in reversed(_LOCKOUT_THRESHOLDS):
+        if fail_count >= threshold:
+            return duration
+    return _LOCKOUT_MAX
+
+
+def _check_lockout(username: str) -> float:
+    """Return seconds_remaining if locked out, else 0.0."""
+    record = _login_attempts.get(username)
+    if not record:
+        return 0.0
+    remaining = record["locked_until"] - time.time()
+    return max(remaining, 0.0)
+
+
+def _record_failure(username: str) -> float:
+    """Increment fail count, apply lockout, return new lockout seconds."""
+    record = _login_attempts.setdefault(username, {"fail_count": 0, "locked_until": 0.0})
+    record["fail_count"] += 1
+    fail_count = record["fail_count"]
+
+    # Only trigger lockout when we hit a multiple of 3
+    if fail_count % 3 == 0:
+        duration = _get_lockout_duration(fail_count)
+        record["locked_until"] = time.time() + duration
+        return float(duration)
+    return 0.0
+
+
+def _clear_attempts(username: str) -> None:
+    """Reset fail count on successful login."""
+    _login_attempts.pop(username, None)
+
+
 class SandboxRequest(BaseModel):
     type: str  # "email" or "file"
     content: str
@@ -115,19 +173,70 @@ def root():
 
 @app.post("/login", response_model=TokenResponse)
 def login(body: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
-    user = authenticate_user(db, body.username, body.password)
+    username = body.username.strip().lower()
+
+    # ── Check current lockout ──────────────────────────────────────────────
+    remaining = _check_lockout(username)
+    if remaining > 0:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail={
+                "message": "Trop de tentatives. Veuillez patienter.",
+                "seconds_remaining": int(remaining),
+                "fail_count": _login_attempts[username]["fail_count"],
+            },
+        )
+
+    # ── Authenticate ───────────────────────────────────────────────────────
+    user = authenticate_user(db, body.username.strip(), body.password)
     if user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+        new_lockout = _record_failure(username)
+        fail_count  = _login_attempts[username]["fail_count"]
+        detail: dict = {
+            "message": "Identifiants incorrects.",
+            "fail_count": fail_count,
+        }
+        if new_lockout > 0:
+            detail["seconds_remaining"] = int(new_lockout)
+            detail["message"] = (
+                f"Trop de tentatives ({fail_count} échecs). "
+                f"Compte bloqué pendant {int(new_lockout)} secondes."
+            )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=detail)
+
+    # ── Success – clear lockout state ──────────────────────────────────────
+    _clear_attempts(username)
 
     token = create_access_token(
         data={"id": user["id"], "username": user["username"], "role": user["role"]},
         expires_delta=timedelta(minutes=30),
     )
-
     return TokenResponse(access_token=token)
+
+import re as _re_pwd
+
+def _validate_password(pwd: str) -> str | None:
+    """Return an error message if password doesn't meet policy, else None."""
+    if len(pwd) < 8:
+        return "Le mot de passe doit contenir au moins 8 caractères."
+    if not _re_pwd.search(r"[A-Z]", pwd):
+        return "Le mot de passe doit contenir au moins une lettre majuscule."
+    if not _re_pwd.search(r"[a-z]", pwd):
+        return "Le mot de passe doit contenir au moins une lettre minuscule."
+    if not _re_pwd.search(r"[0-9]", pwd):
+        return "Le mot de passe doit contenir au moins un chiffre."
+    if "@" not in pwd:
+        return "Le mot de passe doit contenir le caractère @."
+    return None
+
 
 @app.post("/register")
 def register(body: LoginRequest, db: Session = Depends(get_db)):
+    # Server-side password policy enforcement
+    pwd_error = _validate_password(body.password)
+    if pwd_error:
+        raise HTTPException(status_code=422, detail=pwd_error)
+
     existing_user = db.query(User).filter(User.username == body.username).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Username already registered")
