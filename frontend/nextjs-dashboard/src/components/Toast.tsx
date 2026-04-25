@@ -1,16 +1,21 @@
-'use client';
+"use client";
 
-import React, { useEffect } from 'react';
-import { CheckCircle, XCircle, Info, X } from 'lucide-react';
+import React, { useEffect } from "react";
+import { CheckCircle, XCircle, Info, X } from "lucide-react";
 
 interface ToastProps {
   message: string;
-  type?: 'success' | 'error' | 'info';
+  type?: "success" | "error" | "info";
   onClose: () => void;
   duration?: number;
 }
 
-export default function Toast({ message, type = 'success', onClose, duration = 3000 }: ToastProps) {
+export default function Toast({
+  message,
+  type = "success",
+  onClose,
+  duration = 3000,
+}: ToastProps) {
   useEffect(() => {
     const timer = setTimeout(() => {
       onClose();
@@ -21,19 +26,19 @@ export default function Toast({ message, type = 'success', onClose, duration = 3
 
   const getStyles = () => {
     switch (type) {
-      case 'success':
+      case "success":
         return {
-          bg: 'bg-emerald-500',
+          bg: "bg-emerald-500",
           icon: <CheckCircle className="w-5 h-5 text-white" />,
         };
-      case 'error':
+      case "error":
         return {
-          bg: 'bg-rose-500',
+          bg: "bg-rose-500",
           icon: <XCircle className="w-5 h-5 text-white" />,
         };
-      case 'info':
+      case "info":
         return {
-          bg: 'bg-blue-500',
+          bg: "bg-blue-500",
           icon: <Info className="w-5 h-5 text-white" />,
         };
     }
@@ -42,12 +47,12 @@ export default function Toast({ message, type = 'success', onClose, duration = 3
   const styles = getStyles();
 
   return (
-    <div className={`fixed bottom-8 right-8 z-[100] flex items-center gap-4 px-6 py-4 rounded-2xl shadow-2xl ${styles.bg} text-white animate-in slide-in-from-right-10 fade-in duration-300`}>
-      <div className="shrink-0 p-1 bg-white/20 rounded-full">
-        {styles.icon}
-      </div>
+    <div
+      className={`fixed bottom-8 right-8 z-[100] flex items-center gap-4 px-6 py-4 rounded-2xl shadow-2xl ${styles.bg} text-white animate-in slide-in-from-right-10 fade-in duration-300`}
+    >
+      <div className="shrink-0 p-1 bg-white/20 rounded-full">{styles.icon}</div>
       <p className="font-bold text-sm tracking-tight">{message}</p>
-      <button 
+      <button
         onClick={onClose}
         className="ml-2 p-1 hover:bg-white/20 rounded-lg transition-colors"
       >

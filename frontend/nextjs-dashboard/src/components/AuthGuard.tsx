@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useState, type ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 
 export default function AuthGuard({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -9,11 +9,12 @@ export default function AuthGuard({ children }: { children: ReactNode }) {
   const [isAuthed, setIsAuthed] = useState(false);
 
   useEffect(() => {
-    const tokenValue = window.localStorage.getItem('token');
-    const authed = typeof tokenValue === 'string' && tokenValue.trim().length > 0;
+    const tokenValue = window.localStorage.getItem("token");
+    const authed =
+      typeof tokenValue === "string" && tokenValue.trim().length > 0;
 
     if (!authed) {
-      router.replace('/login');
+      router.replace("/login");
     }
 
     setIsAuthed(authed);
@@ -25,4 +26,3 @@ export default function AuthGuard({ children }: { children: ReactNode }) {
 
   return <>{children}</>;
 }
-

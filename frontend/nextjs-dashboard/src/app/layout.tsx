@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "@/components/ThemeProvider";
 import { AlertProvider } from "@/contexts/AlertContext";
 import ChatWidget from "@/components/ChatWidget";
 
@@ -26,14 +25,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50`}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <AlertProvider>
-            {children}
-            <ChatWidget />
-          </AlertProvider>
-        </ThemeProvider>
+    <html lang="en">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-gray-900`}
+      >
+        <AlertProvider>
+          {children}
+          <ChatWidget />
+        </AlertProvider>
       </body>
     </html>
   );

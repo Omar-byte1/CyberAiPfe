@@ -1,13 +1,13 @@
-import type { Metadata } from 'next';
-import { ReactNode } from 'react';
+import type { Metadata } from "next";
+import { ReactNode } from "react";
 
 export const metadata: Metadata = {
-  title: 'Login | SOC Dashboard',
-  description: 'Connexion SOC Dashboard',
+  title: "Login | SOC Dashboard",
+  description: "Connexion SOC Dashboard",
 };
 
 export default function LoginLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">{children}</div>
+    <div className="min-h-screen bg-gray-50 text-gray-900">{children}</div>
   );
 }
