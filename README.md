@@ -1,109 +1,98 @@
-# Cyber Threat AI Dashboard (CTI Dashboard)
+# CyberAI (Système Automatisé de Collecte et de Contextualisation de Données de Cybermenaces)
 
-## Overview
-Cyber Threat Intelligence (CTI) dashboard that correlates cyber threat data and visualizes it for SOC analysis. The frontend is a Next.js App Router UI (TypeScript + Tailwind) that consumes FastAPI endpoints and renders security insights such as:
-- Dashboard stats and charts
-- “Top Threats” and “AI Insight” summaries (computed purely on the client from fetched alerts)
-- Alerts browsing (search, filter, sorting, pagination, CSV export)
-- CVE Intel exploration (with external NVD links)
-- Threat report cards (including PDF export)
-- Mock authentication (frontend-only) and JSON export of the dashboard summary
+![CyberAI UI Preview](frontend/nextjs-dashboard/public/logo.png)
 
-## Architecture
-### Backend (FastAPI)
+## 📌 Overview
+**CyberAI** is a comprehensive, production-ready Security Operations Center (SOC) dashboard. It bridges the gap between raw threat intelligence and actionable insights by automating the collection, parsing, and correlation of cyber threat data. 
+
+The platform leverages **Machine Learning (Isolation Forests)** for anomaly detection, **LLMs (Ollama)** for heuristic threat verdicts, and a blazing-fast **Next.js App Router** frontend designed with a crisp, professional, high-contrast corporate aesthetic.
+
+---
+
+## 🚀 Key Features
+
+### 🔐 Security & Authentication
+- **Secure Access:** Fully integrated JWT-based authentication flow.
+- **Login & Register:** User onboarding with encrypted credentials.
+- **Advanced Rate Limiting:** Exponential backoff mechanism on the login API to mitigate brute-force attacks and credential stuffing.
+- **Route Guarding:** Protected Next.js routes that automatically redirect unauthenticated users.
+
+### 🌐 Dashboard & Modules
+- **Supervision Globale (Dashboard):** High-level SOC metrics, live threat timelines, global origin heatmaps, and ML-driven "Synaptic Insights".
+- **Live Monitor:** Real-time interception feed of network packets, calculating live risk scores and buffering active anomalies.
+- **Parse AI:** An advanced asynchronous pipeline to scrape, parse, and analyze IOCs (Indicators of Compromise) from raw threat intelligence URLs.
+- **Sandbox Detonation:** Isolated environment to execute and analyze suspicious files and URLs (Malware & Phishing analysis) with Ollama-powered behavioral verdicts.
+- **IP Intel:** Deep-dive forensic analysis of suspicious IP addresses.
+- **Incidents & Alerts:** Searchable, sortable, and filterable datagrids of all historical anomalies.
+- **Base CVE:** Searchable database of Common Vulnerabilities and Exposures, visually mapped to CVSS severity scores.
+- **Playbooks:** Automated response procedures mapped to MITRE ATT&CK tactics.
+- **Threat Reports:** Automatically generated PDF threat briefings for C-Suite and stakeholders.
+- **AI Copilot:** A chat widget integrated into the platform to ask questions about current threats in natural language.
+
+---
+
+## 🏗️ Architecture
+
+### Backend (Python / FastAPI)
 Located in `backend/`.
-- Exposes HTTP endpoints for:
-  - running the analysis pipeline
-  - fetching generated `alerts.json`
-  - fetching generated `threat_report.json`
-- Adds CORS configuration for local frontend development.
+- **FastAPI** for high-performance async HTTP endpoints.
+- **SQLAlchemy / SQLite** for user and token management.
+- **Patchright / Playwright** for headless asynchronous web scraping.
+- **Ollama Integration** for local, secure LLM analysis.
+- **Scikit-Learn** for ML-based anomaly detection.
 
-### Frontend (Next.js App Router)
+### Frontend (Next.js / React)
 Located in `frontend/nextjs-dashboard/`.
-- Uses `app/` routes (App Router) and reusable UI components under `src/components/`.
-- Fetches alerts from `http://127.0.0.1:8000/alerts` and computes derived views:
-  - top threats
-  - AI insight message
-  - JSON export payload
-- Includes mock login/logout via `localStorage` + route guarding.
+- **Next.js 14+ (App Router)** for optimized server-side rendering and routing.
+- **Tailwind CSS** for a pristine, responsive light-mode "Corporate Green/White" UI.
+- **Chart.js** for telemetry visualizations (Doughnut, Bar, and Line charts).
+- **Lucide React** for consistent, modern iconography.
 
-## Features
-- Dashboard overview:
-  - Stats cards (total alerts, critical alerts, ML anomalies, SOC status)
-  - Charts (threat activity timeline + distribution)
-  - “Top Threats” (client-side ranking)
-  - “AI Insight” (client-side generated message)
-  - “Export Summary” (download `dashboard-summary.json`)
-- Alerts page:
-  - Search, SOC-level filtering, time window filtering
-  - Sorting and pagination
-  - Copy-to-clipboard and CSV export
-- CVE page:
-  - Search and details display with external NVD links
-- Threat report page:
-  - Cards display and PDF export
-- Login / Logout (mock authentication):
-  - Logout clears `localStorage` and redirects to `/login`
-  - Protected routes redirect to `/login` when unauthenticated
+---
 
-## Technologies Used
-### Backend
-- Python
-- FastAPI
-- Uvicorn
-- pandas
-- scikit-learn
-- Requests
+## ⚙️ Installation & Launch Guide
 
-### Frontend
-- Next.js (App Router) + React
-- TypeScript
-- Tailwind CSS
-- Chart.js (via `react-chartjs-2`)
-- lucide-react icons
-- html2canvas + jspdf (PDF export)
+### 1. Backend Setup (FastAPI)
+Open a terminal in the root repository directory.
 
-## Installation
-### Backend (FastAPI)
-From the repository root:
-1. Create/activate the virtual environment (Windows):
-   - `.\venv\Scripts\activate`
-2. Install dependencies:
-   - `pip install -r requirements.txt`
-3. Run the API:
-   - `python -m backend.api`
+**Windows:**
+```powershell
+# 1. Create and activate a virtual environment
+python -m venv venv
+.\venv\Scripts\activate
 
-The API should be available at `http://127.0.0.1:8000`.
+# 2. Install Python dependencies
+pip install -r backend/requirements.txt
 
-### Frontend (Next.js)
-1. Go to the frontend folder:
-   - `cd frontend/nextjs-dashboard`
-2. Install dependencies:
-   - `npm install`
-3. Start dev server:
-   - `npm run dev`
+# 3. Start the FastAPI server (Runs on port 8000)
+python -m backend.api
+```
+*(The backend API and Swagger Docs will be available at `http://127.0.0.1:8000/docs`)*
 
-The dashboard UI should be available at `http://localhost:3000`.
-Note: the root route redirects to `/login`.
+### 2. Frontend Setup (Next.js)
+Open a second terminal window.
 
-## API Endpoints
-Base URL: `http://127.0.0.1:8000`
+```bash
+# 1. Navigate to the frontend directory
+cd frontend/nextjs-dashboard
 
-- `GET /`
-  - Health/status endpoint
-- `POST /run-analysis`
-  - Runs the analysis pipeline and generates output files used by the UI
-- `GET /threat-report`
-  - Returns the contents of `data/threat_report.json`
-- `GET /alerts`
-  - Returns alerts from `data/alerts.json`
+# 2. Install Node modules
+npm install
 
-## Screenshots
-Add screenshots here before defense:
-- Dashboard overview screenshot
-- Alerts page screenshot
-- CVE page screenshot
-- Threat report page screenshot
+# 3. Start the development server
+npm run dev
+```
+*(The Dashboard UI will be available at `http://localhost:3000`. You will be redirected to `/login` if you are not authenticated.)*
 
-## Author
-- Your Name / Your Team
+---
+
+## 📖 Usage
+1. Open `http://localhost:3000` in your browser.
+2. Click on **Create an account** to register a new user.
+3. Log in with your new credentials (Note: Repeated failed logins will trigger the exponential rate limiter).
+4. Navigate through the sidebar to explore the Live Monitor, run a URL through Parse AI, or detonate a sample in the Sandbox.
+
+---
+
+## 🤝 Authors
+- Designed and built as a comprehensive PFE (Projet de Fin d'Études) focusing on automated threat contextualization.
